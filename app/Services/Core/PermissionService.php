@@ -22,6 +22,7 @@ class PermissionService
                 'name' => $permissionName,
                 'label' => $data['label'],
                 'permission_category_id' => $category->id,
+                'guard_name' => 'web',
             ]);
 
             return $permission;

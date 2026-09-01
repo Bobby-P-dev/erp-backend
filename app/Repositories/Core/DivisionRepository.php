@@ -53,4 +53,18 @@ class DivisionRepository
     {
         return Division::where('id', $id)->delete();
     }
+
+    public function searchDivision($search = null)
+    {
+        $query = Division::select('id', 'code', 'name');
+
+        if (filled($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->where('is_active', true)->take(5)->get();
+    }
 }

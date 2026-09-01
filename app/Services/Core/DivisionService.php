@@ -19,7 +19,11 @@ class DivisionService
         $data['code'] = strtoupper($data['code']);
         $data['name'] = strtoupper($data['name']);
 
-        return $this->divisionRepository->create($data);
+        try {
+            return $this->divisionRepository->create($data);
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     public function getAll($search = null, $filter = [])

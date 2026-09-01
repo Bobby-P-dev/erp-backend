@@ -14,6 +14,7 @@ class Employee extends Model
         'company_id',
         'division_id',
         'position_id',
+        'job_level_id',
         'email',
         'is_active',
     ];
@@ -31,5 +32,10 @@ class Employee extends Model
     public function position()
     {
         return $this->belongsTo(Position::class);
+    }
+
+    public function jobLevel()
+    {
+        return $this->belongsTo(JobLevel::class);
     }
 }

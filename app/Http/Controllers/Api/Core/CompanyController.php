@@ -38,19 +38,12 @@ class CompanyController extends Controller
             'name' => 'required',
         ]);
 
-        try {
-            $company = $this->companyService->store($data);
+        $company = $this->companyService->store($data);
 
-            return response()->json([
-                'message' => 'Company created successfully',
-                'data' => $company
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create company',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Company created successfully',
+            'data' => $company
+        ], 201);
     }
 
     /**

@@ -37,7 +37,7 @@ class PositionRepository
 
     public function create(array $data)
     {
-        return Position::create($data);
+        return Position::firstOrCreate(['name' => $data['name']], $data);
     }
 
     public function update(array $data, $id)
@@ -50,12 +50,12 @@ class PositionRepository
         return Position::where('id', $id)->delete();
     }
 
-    public function attachDivisions($position, array $divisionIds)
+    public function attachDivisions(Position $position, array $divisionIds)
     {
-        return $position->divisions()->sync($divisionIds);
+        return $position->divisions()->syncWithoutDetaching($divisionIds);
     }
 
-    public function detachDivisions($position, array $divisionIds)
+    public function detachDivisions(Position $position, array $divisionIds)
     {
         return $position->divisions()->detach($divisionIds);
     }
@@ -63,5 +63,19 @@ class PositionRepository
     public function updateDivisions($position, array $divisionIds)
     {
         return $position->divisions()->sync($divisionIds);
+    }
+
+    public function searchPosition($search = null)
+    {
+        $query = Position::select('id', 'code', 'name');
+
+        if (filled($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->where('is_active', true)->take(5)->get();
     }
 }

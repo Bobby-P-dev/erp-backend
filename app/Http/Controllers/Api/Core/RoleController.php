@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Core;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Core\RoleShowResource;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
@@ -25,16 +26,18 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validate = $request->validate([
             'name' => 'required|unique:roles,name',
         ]);
 
-        $role = Role::create($request->only('name'));
+        $validate['guard_name'] = 'web';
+
+        $role = Role::create($validate);
 
         return response()->json([
             'message' => 'Role created successfully',
-            'role' => $role,
-        ]);
+            'data' => $role,
+        ], 201);
     }
 
     /**
@@ -42,7 +45,12 @@ class RoleController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $role = Role::with('permissions.permissionCategory')->findOrFail($id);
+
+        return response()->json([
+            'message' => 'Role details fetched successfully',
+            'data' => new RoleShowResource($role)
+        ], 200);
     }
 
     /**
@@ -59,5 +67,21 @@ class RoleController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function syncPermissions(Request $request, $id)
+    {
+        $request->validate([
+            'permissions' => 'required|array',
+            'permissions.*' => 'exists:permissions,id'
+        ]);
+
+        $role = Role::findOrFail($id);
+        $role->syncPermissions($request->permissions);
+
+        return response()->json([
+            'message' => 'Permissions synced successfully',
+            'data' => $role->load('permissions')
+        ], 200);
     }
 }

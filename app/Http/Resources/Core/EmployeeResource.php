@@ -19,6 +19,7 @@ class EmployeeResource extends JsonResource
             'company_id' => $this->company_id,
             'division_id' => $this->division_id,
             'position_id' => $this->position_id,
+            'job_level_id' => $this->job_level_id,
             'nik' => $this->nik,
             'name' => $this->name,
             'email' => $this->email,
@@ -26,6 +27,7 @@ class EmployeeResource extends JsonResource
             'company' => new CompanyResource($this->whenLoaded('company')),
             'division' => new DivisionResource($this->whenLoaded('division')),
             'position' => new PositionResource($this->whenLoaded('position')),
+            'job_level' => new JobLevelResource($this->whenLoaded('jobLevel')),
         ];
     }
 }

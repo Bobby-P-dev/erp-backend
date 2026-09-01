@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Core;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Core\EmployeeStoreRequest;
+use App\Http\Requests\Core\EmployeeUpdateRequest;
 use App\Http\Resources\Core\EmployeeResource;
 use App\Models\Core\DivisionPosition;
 use App\Repositories\Core\EmployeeRepository;
@@ -30,7 +31,7 @@ class EmployeeController extends Controller
 
         return EmployeeResource::collection($data)->additional([
             'message' => 'Employee list fetched successfully'
-        ]);
+        ])->response()->setStatusCode(200);
     }
 
     /**
@@ -49,25 +50,47 @@ class EmployeeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(int $id)
     {
-        //
+        $employee = $this->employeeRepository->show($id);
+        return response()->json([
+            'message' => 'Employee fetched successfully',
+            'data' => new EmployeeResource($employee)
+        ], 200);
     }
 
+    public function getMe()
+    {
+        $employee = $this->employeeRepository->getMe();
+
+        return response()->json([
+            'message' => 'Employee fetched successfully',
+            'data' => new EmployeeResource($employee)
+        ], 200);
+    }
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(EmployeeUpdateRequest $request, int $id)
     {
-        //
+        $employee = $this->employeeService->update($request->validated(), $id);
+
+        return response()->json([
+            'message' => 'Employee updated successfully',
+            'data' => new EmployeeResource($employee)
+        ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(int $id)
     {
-        //
+        $this->employeeRepository->delete($id);
+
+        return response()->json([
+            'message' => 'Employee deleted successfully',
+        ], 200);
     }
 
     /**

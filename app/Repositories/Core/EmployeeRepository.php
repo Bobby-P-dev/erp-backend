@@ -6,13 +6,14 @@ use App\Models\Core\Division;
 use App\Models\Core\DivisionPosition;
 use App\Models\Core\Employee;
 use App\Models\Core\Position;
+use Auth;
 use Illuminate\Cache\RateLimiting\Limit;
 
 class EmployeeRepository
 {
     public function all($search = null, array $filter = [])
     {
-        $query = Employee::with(['company', 'division', 'position'])->orderBy('nik', 'asc');
+        $query = Employee::with(['company', 'division', 'position', 'jobLevel'])->orderBy('nik', 'asc');
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {
@@ -34,11 +35,32 @@ class EmployeeRepository
             $query->where('position_id', $filter['position_id']);
         }
 
+        if (isset($filter['job_level_id']) && filled($filter['job_level_id'])) {
+            $query->where('job_level_id', $filter['job_level_id']);
+        }
+
         if (isset($filter['is_active']) && filled($filter['is_active'])) {
             $query->where('is_active', $filter['is_active']);
         }
 
         return $query->paginate(10);
+    }
+
+    public function show(int $id)
+    {
+
+        $data = Employee::with(['company', 'division', 'position', 'jobLevel'])->findOrFail($id);
+
+        return $data;
+    }
+
+    public function getMe()
+    {
+        $employeeId = Auth::user()->employee_id;
+
+        $data = Employee::with(['company', 'division', 'position', 'jobLevel'])->find($employeeId);
+
+        return $data;
     }
 
     public function create(array $data)
@@ -48,15 +70,15 @@ class EmployeeRepository
 
     public function update(array $data, string $id)
     {
-        $employee = Employee::find($id);
-        $employee->update($data);
+        $employee = Employee::findOrFail($id);
+        $employee->updateOrFail($data);
         return $employee;
     }
 
     public function delete(string $id)
     {
-        $employee = Employee::find($id);
-        $employee->delete();
+        $employee = Employee::findOrFail($id);
+        $employee->deleteOrFail();
         return $employee;
     }
 

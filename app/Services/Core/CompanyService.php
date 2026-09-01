@@ -19,7 +19,11 @@ class CompanyService
         $data['code'] = strtoupper($data['code']);
         $data['name'] = strtoupper($data['name']);
 
-        return $this->companyRepository->create($data);
+        try {
+            return $this->companyRepository->create($data);
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     public function getAll($search = null)
