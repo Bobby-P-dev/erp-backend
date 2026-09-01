@@ -45,7 +45,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     //employee
     Route::get('employee/{id}/show', [EmployeeController::class, 'show']);
-    Route::get('employee/profile', [EmployeeController::class, 'getMe'])->middleware('permission:users.create');
+    Route::get('employee/profile', [EmployeeController::class, 'getMe']);
     Route::patch('employee/{id}/update', [EmployeeController::class, 'update']);
     Route::delete('employee/{id}/delete', [EmployeeController::class, 'destroy']);
 

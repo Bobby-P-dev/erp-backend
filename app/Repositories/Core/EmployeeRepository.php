@@ -95,7 +95,7 @@ class EmployeeRepository
 
     public function getPosition($search, $divisionId)
     {
-        $query = DivisionPosition::with('position')->where('division_id', $divisionId)->limit(10)->get();
+        $query = DivisionPosition::with('position')->where('division_id', $divisionId);
 
         if (filled($search)) {
             $query->where('name', 'like', "%{$search}%");

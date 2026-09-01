@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Core\Employee;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -33,6 +34,6 @@ class User extends Authenticatable
 
     public function employee()
     {
-        return $this->belongsTo(\App\Models\Core\Employee::class);
+        return $this->belongsTo(Employee::class);
     }
 }

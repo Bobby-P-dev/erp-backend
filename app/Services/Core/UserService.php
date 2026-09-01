@@ -14,7 +14,7 @@ class UserService
         $this->userRepository = new UserRepository();
     }
 
-    public function syncRoles(string $id, array $roles)
+    public function syncRoles(int $id, array $roles)
     {
         try {
             DB::beginTransaction();
