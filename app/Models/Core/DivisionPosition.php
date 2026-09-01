@@ -21,4 +21,32 @@ class DivisionPosition extends Model
     {
         return $this->belongsTo(Position::class);
     }
+
+    /**
+     * Scope a query to search by division name or position name.
+     */
+    public function scopeSearchDivision($query, $search)
+    {
+        if (filled($search)) {
+            $query->whereHas('division', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Scope a query to search by position name only.
+     */
+    public function scopeSearchPosition($query, $search)
+    {
+        if (filled($search)) {
+            $query->whereHas('position', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
+        return $query;
+    }
 }

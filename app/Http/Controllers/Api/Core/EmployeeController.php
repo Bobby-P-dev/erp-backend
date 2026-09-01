@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api\Core;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Core\EmployeeStoreRequest;
 use App\Http\Resources\Core\EmployeeResource;
+use App\Models\Core\DivisionPosition;
+use App\Repositories\Core\EmployeeRepository;
 use App\Services\Core\EmployeeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -11,10 +14,12 @@ use Illuminate\Validation\Rule;
 class EmployeeController extends Controller
 {
     protected EmployeeService $employeeService;
+    protected EmployeeRepository $employeeRepository;
 
     public function __construct()
     {
         $this->employeeService = new EmployeeService();
+        $this->employeeRepository = new EmployeeRepository();
     }
     /**
      * Display a listing of the resource.
@@ -31,24 +36,9 @@ class EmployeeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(EmployeeStoreRequest $request)
     {
-        $request->validate([
-            'name' => 'required',
-            'nik' => [
-                'required',
-                Rule::unique('employees')->where(function ($query) use ($request) {
-                    return $query->where('company_id', $request->company_id);
-                })
-            ],
-            'company_id' => 'required|exists:companies,id',
-            'division_id' => 'required|exists:divisions,id',
-            'position_id' => 'required|exists:positions,id',
-            'email' => 'nullable|email',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $employee = $this->employeeService->create($request->all());
+        $employee = $this->employeeService->create($request->validated());
 
         return response()->json([
             'message' => 'Employee created successfully',
@@ -78,5 +68,28 @@ class EmployeeController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Mengambil data Division dan Position dengan (atau tanpa) pencarian
+     */
+    public function getDivision(Request $request)
+    {
+        $data = $this->employeeRepository->getDivision($request->search);
+
+        return response()->json([
+            'message' => 'Division fetched successfully',
+            'data' => $data
+        ]);
+    }
+
+    public function getPosition(Request $request, int $divisionId)
+    {
+        $data = $this->employeeRepository->getPosition($request->search, $divisionId);
+
+        return response()->json([
+            'message' => 'Position fetched successfully',
+            'data' => $data
+        ]);
     }
 }

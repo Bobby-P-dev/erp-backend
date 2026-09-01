@@ -21,6 +21,9 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
+        $user->load('roles');
+        $user->all_permissions = $user->getAllPermissions()->pluck('name');
+
         return response()->json([
             'message' => 'Login successful',
             'user' => $user,
@@ -30,13 +33,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): Response
+    public function destroy(Request $request): \Illuminate\Http\JsonResponse
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->noContent();
+        return response()->json(["message" => "Logout successful"]);
     }
 }

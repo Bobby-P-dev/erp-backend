@@ -2,7 +2,11 @@
 
 namespace App\Repositories\Core;
 
+use App\Models\Core\Division;
+use App\Models\Core\DivisionPosition;
 use App\Models\Core\Employee;
+use App\Models\Core\Position;
+use Illuminate\Cache\RateLimiting\Limit;
 
 class EmployeeRepository
 {
@@ -54,5 +58,27 @@ class EmployeeRepository
         $employee = Employee::find($id);
         $employee->delete();
         return $employee;
+    }
+
+    public function getDivision($search)
+    {
+        $query = Division::select("id", "name")->where("is_active", true);
+
+        if (filled($search)) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        return $query->limit(10)->get();
+    }
+
+    public function getPosition($search, $divisionId)
+    {
+        $query = DivisionPosition::with('position')->where('division_id', $divisionId)->limit(10)->get();
+
+        if (filled($search)) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        return $query->limit(10)->get();
     }
 }
