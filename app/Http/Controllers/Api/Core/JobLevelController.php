@@ -14,59 +14,86 @@ class JobLevelController extends Controller
     {
         $this->jobLevelRepository = $jobLevelRepository;
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index(Request $request)
     {
         $data = $this->jobLevelRepository->all($request->search);
+        
         return response()->json([
-            'status' => true,
-            'message' => 'Data retrieved successfully',
+            'message' => 'Job Level list fetched successfully',
             'data' => $data,
-        ]);
+        ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function search(Request $request)
+    {
+        $data = $this->jobLevelRepository->searchJobLevel($request->search);
+
+        return response()->json([
+            'message' => 'Job Level search fetched successfully',
+            'data' => $data
+        ], 200);
+    }
+
     public function store(Request $request)
     {
         $validate = $request->validate([
-            'code' => 'required|string|max:10',
-            'name' => 'required|string|max:50',
+            'code' => 'required|string|max:10|unique:job_levels,code',
+            'name' => 'required|string|max:50|unique:job_levels,name',
             'is_active' => 'boolean',
         ]);
+
+        $validate['is_active'] = $request->has('is_active') ? $request->is_active : true;
 
         $data = $this->jobLevelRepository->create($validate);
 
         return response()->json([
-            'message' => 'Data created successfully',
+            'message' => 'Job Level created successfully',
             'data' => $data,
-        ]);
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        //
+        $data = $this->jobLevelRepository->find($id);
+
+        return response()->json([
+            'message' => 'Job Level details fetched successfully',
+            'data' => $data
+        ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        //
+        $validate = $request->validate([
+            'code' => 'required|string|max:10|unique:job_levels,code,' . $id,
+            'name' => 'required|string|max:50|unique:job_levels,name,' . $id,
+            'is_active' => 'boolean',
+        ]);
+
+        $data = $this->jobLevelRepository->update($validate, $id);
+
+        return response()->json([
+            'message' => 'Job Level updated successfully',
+            'data' => $data
+        ], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        try {
+            $this->jobLevelRepository->delete($id);
+
+            return response()->json([
+                'message' => 'Job Level deleted successfully'
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1451) {
+                return response()->json([
+                    'message' => 'Cannot delete Job Level because it is in use.'
+                ], 409);
+            }
+            throw $e;
+        }
     }
 }

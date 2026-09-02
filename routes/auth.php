@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::group(["prefix" => "v1"], function () {
 
     Route::post('/register', [RegisteredUserController::class, 'store'])
-        ->middleware('guest')
+        ->middleware('auth:sanctum')
         ->name('register');
 
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])

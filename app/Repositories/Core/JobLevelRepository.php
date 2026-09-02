@@ -19,32 +19,41 @@ class JobLevelRepository
         return $query->paginate(10);
     }
 
+    public function searchJobLevel($search = null)
+    {
+        $query = JobLevel::select('id', 'name', 'code')->where('is_active', true);
+
+        if (filled($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->limit(10)->get();
+    }
+
+    public function find($id)
+    {
+        return JobLevel::findOrFail($id);
+    }
+
     public function create(array $data)
     {
-        $jobLevel = JobLevel::where('code', $data['code'])->first();
-        if ($jobLevel) {
-            throw new \Exception('Code already exists');
-        }
-
-        $jobLevel = JobLevel::where('name', $data['name'])->first();
-        if ($jobLevel) {
-            throw new \Exception('Name already exists');
-        }
-
         return JobLevel::create($data);
     }
 
     public function update(array $data, string $id)
     {
-        $jobLevel = JobLevel::find($id);
-        $jobLevel->update($data);
+        $jobLevel = JobLevel::findOrFail($id);
+        $jobLevel->updateOrFail($data);
         return $jobLevel;
     }
 
     public function delete(string $id)
     {
-        $jobLevel = JobLevel::find($id);
-        $jobLevel->delete();
+        $jobLevel = JobLevel::findOrFail($id);
+        $jobLevel->deleteOrFail();
         return $jobLevel;
     }
 }

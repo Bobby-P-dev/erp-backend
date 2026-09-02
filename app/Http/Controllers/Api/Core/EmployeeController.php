@@ -86,11 +86,20 @@ class EmployeeController extends Controller
      */
     public function destroy(int $id)
     {
-        $this->employeeRepository->delete($id);
+        try {
+            $this->employeeRepository->delete($id);
 
-        return response()->json([
-            'message' => 'Employee deleted successfully',
-        ], 200);
+            return response()->json([
+                'message' => 'Employee deleted successfully',
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1451) {
+                return response()->json([
+                    'message' => 'Cannot delete employee because it is in use.'
+                ], 409);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -98,7 +107,7 @@ class EmployeeController extends Controller
      */
     public function getDivision(Request $request)
     {
-        $data = $this->employeeRepository->getDivision($request->search);
+        $data = $this->employeeRepository->getDivision($request->search, $request->company_id);
 
         return response()->json([
             'message' => 'Division fetched successfully',
@@ -112,6 +121,16 @@ class EmployeeController extends Controller
 
         return response()->json([
             'message' => 'Position fetched successfully',
+            'data' => $data
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $data = $this->employeeRepository->searchEmployee($request->search);
+
+        return response()->json([
+            'message' => 'Employee search results fetched successfully',
             'data' => $data
         ]);
     }

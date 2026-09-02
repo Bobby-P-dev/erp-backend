@@ -8,7 +8,7 @@ class DivisionRepository
 {
     public function all($search = null, array $filter = [])
     {
-        $query = Division::with('company:id,name')->select('id', 'company_id', 'name', 'code')->orderBy('name', 'asc');
+        $query = Division::with('company:id,name')->select('id', 'company_id', 'name', 'code', 'is_active')->orderBy('name', 'asc');
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {
@@ -43,8 +43,12 @@ class DivisionRepository
 
     public function update(array $data, $id)
     {
-        $data['code'] = strtoupper($data['code']);
-        $data['name'] = strtoupper($data['name']);
+        if (isset($data['code'])) {
+            $data['code'] = strtoupper($data['code']);
+        }
+        if (isset($data['name'])) {
+            $data['name'] = strtoupper($data['name']);
+        }
 
         return Division::where('id', $id)->update($data);
     }
@@ -56,7 +60,7 @@ class DivisionRepository
 
     public function searchDivision($search = null)
     {
-        $query = Division::select('id', 'code', 'name');
+        $query = Division::with('company:id,name')->select('id', 'company_id', 'code', 'name');
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {

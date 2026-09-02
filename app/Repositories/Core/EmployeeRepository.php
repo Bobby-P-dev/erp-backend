@@ -82,9 +82,13 @@ class EmployeeRepository
         return $employee;
     }
 
-    public function getDivision($search)
+    public function getDivision($search, $companyId = null)
     {
         $query = Division::select("id", "name")->where("is_active", true);
+
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
 
         if (filled($search)) {
             $query->where('name', 'like', "%{$search}%");
@@ -97,8 +101,21 @@ class EmployeeRepository
     {
         $query = DivisionPosition::with('position')->where('division_id', $divisionId);
 
+        $query->searchPosition($search);
+
+        return $query->limit(10)->get();
+    }
+
+    public function searchEmployee($search)
+    {
+        $query = Employee::select('id', 'nik', 'name')
+            ->where('is_active', true);
+
         if (filled($search)) {
-            $query->where('name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('nik', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            });
         }
 
         return $query->limit(10)->get();

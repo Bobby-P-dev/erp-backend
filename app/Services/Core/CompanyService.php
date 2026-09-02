@@ -26,12 +26,15 @@ class CompanyService
         }
     }
 
-    public function getAll($search = null)
+    public function getAll($search)
     {
-        $search = strtoupper($search);
+        if (!empty($search)) {
+            $search = strtoupper((string) $search);
+        }
 
         return $this->companyRepository->all($search);
     }
+
 
     public function update(array $data, $id)
     {

@@ -47,7 +47,12 @@ class PositionRepository
 
     public function delete($id)
     {
-        return Position::where('id', $id)->delete();
+        $position = $this->find($id);
+        if ($position) {
+            $position->divisions()->detach();
+            $position->delete();
+        }
+        return $position;
     }
 
     public function attachDivisions(Position $position, array $divisionIds)

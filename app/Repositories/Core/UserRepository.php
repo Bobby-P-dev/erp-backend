@@ -11,6 +11,55 @@ class UserRepository
         return User::findOrFail($id);
     }
 
+    public function getAll($search = null, array $filters = [])
+    {
+        $query = User::with([
+            'roles',
+            'employee.company',
+            'employee.division',
+            'employee.position',
+            'employee.jobLevel'
+        ]);
+
+        if (filled($search)) {
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
+        if (isset($filters['company_id']) && filled($filters['company_id'])) {
+            $query->whereHas('employee', function ($q) use ($filters) {
+                $q->where('company_id', $filters['company_id']);
+            });
+        }
+
+        if (isset($filters['division_id']) && filled($filters['division_id'])) {
+            $query->whereHas('employee', function ($q) use ($filters) {
+                $q->where('division_id', $filters['division_id']);
+            });
+        }
+
+        if (isset($filters['position_id']) && filled($filters['position_id'])) {
+            $query->whereHas('employee', function ($q) use ($filters) {
+                $q->where('position_id', $filters['position_id']);
+            });
+        }
+
+        if (isset($filters['job_level_id']) && filled($filters['job_level_id'])) {
+            $query->whereHas('employee', function ($q) use ($filters) {
+                $q->where('job_level_id', $filters['job_level_id']);
+            });
+        }
+
+        if (isset($filters['role_id']) && filled($filters['role_id'])) {
+            $query->whereHas('roles', function ($q) use ($filters) {
+                $q->where('id', $filters['role_id']);
+            });
+        }
+
+        return $query->paginate(10);
+    }
+
     public function syncRoles(User $user, array $roles)
     {
         return $user->syncRoles($roles);

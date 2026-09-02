@@ -15,6 +15,16 @@ class UserController extends Controller
         $this->userService = new UserService();
     }
 
+    public function index(Request $request)
+    {
+        $data = $this->userService->getAll($request->search, $request->filter ?? []);
+
+        return response()->json([
+            'message' => 'Users fetched successfully',
+            'data' => $data
+        ], 200);
+    }
+
     public function syncRoles(Request $request, $id)
     {
         $request->validate([
@@ -44,5 +54,19 @@ class UserController extends Controller
             'message' => 'Authenticated user fetched successfully',
             'user' => $user,
         ]);
+    }
+
+    public function updatePassword(Request $request, $id)
+    {
+        $request->validate([
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+        ]);
+
+        $user = $this->userService->updatePassword($id, $request->string('password'));
+
+        return response()->json([
+            'message' => 'User password updated successfully',
+            'data' => $user
+        ], 200);
     }
 }

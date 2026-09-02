@@ -14,6 +14,12 @@ class UserService
         $this->userRepository = new UserRepository();
     }
 
+    public function getAll($search = null, array $filter = [])
+    {
+        $search = strtolower($search);
+        return $this->userRepository->getAll($search, $filter);
+    }
+
     public function syncRoles(int $id, array $roles)
     {
         try {
@@ -27,5 +33,13 @@ class UserService
             DB::rollBack();
             throw $e;
         }
+    }
+
+    public function updatePassword(int $id, string $newPassword)
+    {
+        $user = $this->userRepository->find($id);
+        $user->password = \Illuminate\Support\Facades\Hash::make($newPassword);
+        $user->save();
+        return $user;
     }
 }

@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Api\Core;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\Core\CompanyRepository;
 use App\Services\Core\CompanyService;
 use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
     protected CompanyService $companyService;
+    protected CompanyRepository $companyRepository;
 
     public function __construct()
     {
         $this->companyService = new CompanyService();
+        $this->companyRepository = new CompanyRepository();
     }
 
     /**
@@ -36,6 +39,7 @@ class CompanyController extends Controller
         $data = $request->validate([
             'code' => 'required|unique:companies,code',
             'name' => 'required',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $company = $this->companyService->store($data);
@@ -59,7 +63,25 @@ class CompanyController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $data = $request->validate([
+            'code' => 'sometimes|required|unique:companies,code,' . $id,
+            'name' => 'sometimes|required',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        if (isset($data['code'])) {
+            $data['code'] = strtoupper($data['code']);
+        }
+        if (isset($data['name'])) {
+            $data['name'] = strtoupper($data['name']);
+        }
+
+        $company = $this->companyRepository->update($data, $id);
+
+        return response()->json([
+            'message' => 'Company updated successfully',
+            'data' => $company
+        ], 200);
     }
 
     /**
@@ -67,6 +89,20 @@ class CompanyController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $this->companyRepository->delete($id);
+
+        return response()->json([
+            'message' => 'Company deleted successfully'
+        ], 200);
+    }
+
+    public function searchCompany(Request $request)
+    {
+        $data = $this->companyRepository->searchCompany($request->search);
+
+        return response()->json([
+            'message' => 'Company list fetched successfully',
+            'data' => $data
+        ], 200);
     }
 }

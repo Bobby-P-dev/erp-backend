@@ -35,6 +35,7 @@ class DivisionController extends Controller
             'company_id' => 'required|exists:companies,id',
             'name' => 'required',
             'code' => 'required',
+            'is_active' => 'nullable|boolean'
         ]);
 
         $division = $this->divisionService->store($data);
@@ -50,7 +51,16 @@ class DivisionController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $division = $this->divisionRepository->find($id);
+
+        if (!$division) {
+            return response()->json(['message' => 'Division not found'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Division details fetched successfully',
+            'data' => $division
+        ], 200);
     }
 
     /**
@@ -58,7 +68,18 @@ class DivisionController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $data = $request->validate([
+            'company_id' => 'sometimes|required|exists:companies,id',
+            'name' => 'sometimes|required',
+            'code' => 'sometimes|required',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $this->divisionRepository->update($data, $id);
+
+        return response()->json([
+            'message' => 'Division updated successfully'
+        ], 200);
     }
 
     /**
@@ -66,7 +87,11 @@ class DivisionController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $this->divisionRepository->delete($id);
+
+        return response()->json([
+            'message' => 'Division deleted successfully'
+        ], 200);
     }
 
     public function searchDivision(Request $request)

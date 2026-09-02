@@ -52,7 +52,16 @@ class PositionController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $position = $this->positionRepository->find($id);
+        if (!$position) {
+            return response()->json(['message' => 'Position not found'], 404);
+        }
+        $position->load('divisions:id,company_id,name');
+
+        return response()->json([
+            'message' => 'Position details fetched successfully',
+            'data' => $position
+        ], 200);
     }
 
     /**
@@ -60,7 +69,20 @@ class PositionController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validate = $request->validate([
+            'name' => 'sometimes|required',
+            'code' => 'sometimes|required|unique:positions,code,' . $id,
+            'is_active' => 'nullable|boolean',
+            'division_ids' => 'sometimes|array',
+            'division_ids.*' => 'exists:divisions,id',
+        ]);
+
+        $position = $this->positionService->update($validate, $id);
+
+        return response()->json([
+            'message' => 'Position updated successfully',
+            'data' => $position
+        ], 200);
     }
 
     /**
@@ -68,7 +90,21 @@ class PositionController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            $this->positionRepository->delete($id);
+
+            return response()->json([
+                'message' => 'Position deleted successfully'
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == "23000") {
+                return response()->json([
+                    'message' => 'Posisi tidak bisa dihapus karena sedang digunakan oleh karyawan.'
+                ], 409);
+            }
+            
+            throw $e;
+        }
     }
 
     public function searchPosition(Request $request)

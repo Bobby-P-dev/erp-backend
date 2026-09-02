@@ -17,7 +17,7 @@ class PositionService
 
     public function getAll($search = null, $filter = [])
     {
-        $search = strtoupper($search);
+        $search = strtoupper((string) $search);
         return $this->positionRepository->all($search, $filter);
     }
 
@@ -47,8 +47,31 @@ class PositionService
 
     public function update(array $data, $id)
     {
-        $data['name'] = strtoupper($data['name']);
-        return Position::where('id', $id)->update($data);
+        try {
+            DB::beginTransaction();
+
+            if (isset($data['name'])) {
+                $data['name'] = strtoupper($data['name']);
+            }
+            if (isset($data['code'])) {
+                $data['code'] = strtoupper($data['code']);
+            }
+
+            $positionData = collect($data)->except('division_ids')->toArray();
+            
+            $this->positionRepository->update($positionData, $id);
+            $position = $this->positionRepository->find($id);
+
+            if (isset($data['division_ids'])) {
+                $this->positionRepository->updateDivisions($position, $data['division_ids']);
+            }
+
+            DB::commit();
+            return $position;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     public function delete($id)

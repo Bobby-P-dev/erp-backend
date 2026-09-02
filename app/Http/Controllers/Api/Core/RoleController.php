@@ -4,26 +4,38 @@ namespace App\Http\Controllers\Api\Core;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Core\RoleShowResource;
+use App\Repositories\Core\RoleRepository;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        $roles = Role::all();
+    protected RoleRepository $roleRepository;
 
-        return response()->json([
-            'roles' => $roles,
-        ]);
+    public function __construct(RoleRepository $roleRepository)
+    {
+        $this->roleRepository = $roleRepository;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function index(Request $request)
+    {
+        $data = $this->roleRepository->all($request->search);
+
+        return response()->json([
+            'message' => 'Role list fetched successfully',
+            'data' => $data
+        ], 200);
+    }
+
+    public function search(Request $request)
+    {
+        $data = $this->roleRepository->searchRole($request->search);
+
+        return response()->json([
+            'message' => 'Role search fetched successfully',
+            'data' => $data
+        ], 200);
+    }
+
     public function store(Request $request)
     {
         $validate = $request->validate([
@@ -32,7 +44,7 @@ class RoleController extends Controller
 
         $validate['guard_name'] = 'web';
 
-        $role = Role::create($validate);
+        $role = $this->roleRepository->create($validate);
 
         return response()->json([
             'message' => 'Role created successfully',
@@ -40,12 +52,13 @@ class RoleController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        $role = Role::with('permissions.permissionCategory')->findOrFail($id);
+        $role = $this->roleRepository->find($id);
+
+        if (!$role) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
 
         return response()->json([
             'message' => 'Role details fetched successfully',
@@ -53,20 +66,38 @@ class RoleController extends Controller
         ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        //
+        $validate = $request->validate([
+            'name' => 'required|unique:roles,name,' . $id,
+        ]);
+
+        $this->roleRepository->update($validate, $id);
+
+        $role = $this->roleRepository->find($id);
+
+        return response()->json([
+            'message' => 'Role updated successfully',
+            'data' => $role
+        ], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        try {
+            $this->roleRepository->delete($id);
+
+            return response()->json([
+                'message' => 'Role deleted successfully'
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1451) {
+                return response()->json([
+                    'message' => 'Cannot delete role because it is in use.'
+                ], 409);
+            }
+            throw $e;
+        }
     }
 
     public function syncPermissions(Request $request, $id)
@@ -76,12 +107,11 @@ class RoleController extends Controller
             'permissions.*' => 'exists:permissions,id'
         ]);
 
-        $role = Role::findOrFail($id);
-        $role->syncPermissions($request->permissions);
+        $role = $this->roleRepository->syncPermissions($id, $request->permissions);
 
         return response()->json([
             'message' => 'Permissions synced successfully',
-            'data' => $role->load('permissions')
+            'data' => $role
         ], 200);
     }
 }

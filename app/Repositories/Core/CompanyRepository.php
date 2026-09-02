@@ -8,7 +8,7 @@ class CompanyRepository
 {
     public function all($search = null)
     {
-        $query = Company::select('name', 'code')->orderBy('name', 'asc');
+        $query = Company::select('id', 'name', 'code', 'is_active')->orderBy('name', 'asc');
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {
@@ -42,5 +42,19 @@ class CompanyRepository
         $company = $this->find($id);
         $company->delete();
         return $company;
+    }
+
+    public function searchCompany($search = null)
+    {
+        $query = Company::select('id', 'code', 'name');
+
+        if (filled($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->where('is_active', true)->take(5)->get();
     }
 }

@@ -26,7 +26,7 @@ class DivisionService
         }
     }
 
-    public function getAll($search = null, $filter = [])
+    public function getAll($search, $filter = [])
     {
         $search = strtoupper($search);
 
