@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\PositionResource;
+
 use App\Http\Controllers\Controller;
 use App\Repositories\Core\PositionRepository;
 use App\Services\Core\PositionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class PositionController extends Controller
@@ -21,10 +24,9 @@ class PositionController extends Controller
     {
         $data = $this->positionService->getAll($request->search, $request->filter ?? []);
 
-        return response()->json([
-            'message' => 'Position list fetched successfully',
-            'data' => $data
-        ], 200);
+        return PositionResource::collection($data)->additional([
+            'message' => 'Position list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     /**
@@ -43,7 +45,7 @@ class PositionController extends Controller
 
         return response()->json([
             'message' => 'Position created successfully',
-            'data' => $position
+            'data' => new PositionResource($position)
         ], 201);
     }
 
@@ -81,7 +83,7 @@ class PositionController extends Controller
 
         return response()->json([
             'message' => 'Position updated successfully',
-            'data' => $position
+            'data' => new PositionResource($position)
         ], 200);
     }
 
@@ -96,13 +98,13 @@ class PositionController extends Controller
             return response()->json([
                 'message' => 'Position deleted successfully'
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->getCode() == "23000") {
                 return response()->json([
                     'message' => 'Posisi tidak bisa dihapus karena sedang digunakan oleh karyawan.'
                 ], 409);
             }
-            
+
             throw $e;
         }
     }
@@ -113,7 +115,7 @@ class PositionController extends Controller
 
         return response()->json([
             'message' => 'Position list fetched successfully',
-            'data' => $data
+            'data' => PositionResource::collection($data)
         ], 200);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\RoleResource;
+
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Core\RoleShowResource;
 use App\Repositories\Core\RoleRepository;
@@ -20,20 +22,18 @@ class RoleController extends Controller
     {
         $data = $this->roleRepository->all($request->search);
 
-        return response()->json([
-            'message' => 'Role list fetched successfully',
-            'data' => $data
-        ], 200);
+        return RoleResource::collection($data)->additional([
+            'message' => 'Role list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function search(Request $request)
     {
         $data = $this->roleRepository->searchRole($request->search);
 
-        return response()->json([
-            'message' => 'Role search fetched successfully',
-            'data' => $data
-        ], 200);
+        return RoleResource::collection($data)->additional([
+            'message' => 'Role search fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function store(Request $request)
@@ -48,7 +48,7 @@ class RoleController extends Controller
 
         return response()->json([
             'message' => 'Role created successfully',
-            'data' => $role,
+            'data' => new RoleResource($role),
         ], 201);
     }
 
@@ -78,7 +78,7 @@ class RoleController extends Controller
 
         return response()->json([
             'message' => 'Role updated successfully',
-            'data' => $role
+            'data' => new RoleResource($role)
         ], 200);
     }
 
@@ -111,7 +111,7 @@ class RoleController extends Controller
 
         return response()->json([
             'message' => 'Permissions synced successfully',
-            'data' => $role
+            'data' => new RoleResource($role)
         ], 200);
     }
 }

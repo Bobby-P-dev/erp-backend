@@ -118,6 +118,6 @@ class EmployeeRepository
             });
         }
 
-        return $query->limit(10)->get();
+        return $query->limit(5)->get();
     }
 }

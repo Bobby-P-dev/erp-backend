@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\PermissionResource;
+
 use App\Http\Controllers\Controller;
 use App\Services\Core\PermissionService;
 use App\Repositories\Core\PermissionRepository;
@@ -23,20 +25,18 @@ class PermissionController extends Controller
         $perPage = $request->get('per_page', 10);
         $data = $this->permissionRepository->all($request->search, $perPage);
 
-        return response()->json([
-            'message' => 'Permission list fetched successfully',
-            'data' => $data
-        ], 200);
+        return PermissionResource::collection($data)->additional([
+            'message' => 'Permission list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function search(Request $request)
     {
         $data = $this->permissionRepository->searchPermission($request->search);
 
-        return response()->json([
-            'message' => 'Permission list fetched successfully',
-            'data' => $data
-        ], 200);
+        return PermissionResource::collection($data)->additional([
+            'message' => 'Permission list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function store(Request $request)
@@ -50,7 +50,7 @@ class PermissionController extends Controller
 
         return response()->json([
             'message' => 'Permission created successfully',
-            'data' => $permission,
+            'data' => new PermissionResource($permission),
         ], 201);
     }
 
@@ -66,7 +66,7 @@ class PermissionController extends Controller
 
         return response()->json([
             'message' => 'Permission details fetched successfully',
-            'data' => $permission
+            'data' => new PermissionResource($permission)
         ], 200);
     }
 
@@ -81,7 +81,7 @@ class PermissionController extends Controller
 
         return response()->json([
             'message' => 'Permission updated successfully',
-            'data' => $permission
+            'data' => new PermissionResource($permission)
         ], 200);
     }
 

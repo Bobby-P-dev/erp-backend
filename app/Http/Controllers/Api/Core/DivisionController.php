@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\DivisionResource;
+
 use App\Http\Controllers\Controller;
 use App\Repositories\Core\DivisionRepository;
 use App\Services\Core\DivisionService;
@@ -23,10 +25,9 @@ class DivisionController extends Controller
     {
         $data = $this->divisionService->getAll($request->search, $request->filter ?? []);
 
-        return response()->json([
-            'message' => 'Division list fetched successfully',
-            'data' => $data
-        ], 200);
+        return DivisionResource::collection($data)->additional([
+            'message' => 'Division list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function store(Request $request)
@@ -42,7 +43,7 @@ class DivisionController extends Controller
 
         return response()->json([
             'message' => 'Division created successfully',
-            'data' => $division
+            'data' => new DivisionResource($division)
         ], 201);
     }
 
@@ -100,7 +101,7 @@ class DivisionController extends Controller
 
         return response()->json([
             'message' => 'Division list fetched successfully',
-            'data' => $data
+            'data' => DivisionResource::collection($data)
         ], 200);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\PermissionCategoryResource;
+
 use App\Http\Controllers\Controller;
 use App\Repositories\Core\PermissionCategoryRepository;
 use Illuminate\Http\Request;
@@ -19,10 +21,9 @@ class PermissionCategoryController extends Controller
     {
         $data = $this->permissionCategoryRepository->all($request->search);
 
-        return response()->json([
-            'message' => 'Permission category list fetched successfully',
-            'data' => $data
-        ], 200);
+        return PermissionCategoryResource::collection($data)->additional([
+            'message' => 'Permission category list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function store(Request $request)
@@ -35,7 +36,7 @@ class PermissionCategoryController extends Controller
 
         return response()->json([
             'message' => 'Permission category created successfully',
-            'data' => $permissionCategory,
+            'data' => new PermissionCategoryResource($permissionCategory),
         ], 201);
     }
 
@@ -49,7 +50,7 @@ class PermissionCategoryController extends Controller
 
         return response()->json([
             'message' => 'Permission category details fetched successfully',
-            'data' => $permissionCategory
+            'data' => new PermissionCategoryResource($permissionCategory)
         ], 200);
     }
 
@@ -79,9 +80,8 @@ class PermissionCategoryController extends Controller
     {
         $data = $this->permissionCategoryRepository->searchPermissionCategory($request->search);
 
-        return response()->json([
-            'message' => 'Permission category list fetched successfully',
-            'data' => $data
-        ], 200);
+        return PermissionCategoryResource::collection($data)->additional([
+            'message' => 'Permission category list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\CompanyResource;
+
 use App\Http\Controllers\Controller;
 use App\Repositories\Core\CompanyRepository;
 use App\Services\Core\CompanyService;
@@ -25,10 +27,9 @@ class CompanyController extends Controller
     {
         $data = $this->companyService->getAll($request->search);
 
-        return response()->json([
-            'message' => 'Company list fetched successfully',
-            'data' => $data
-        ], 200);
+        return CompanyResource::collection($data)->additional([
+            'message' => 'Company list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     /**
@@ -46,7 +47,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'message' => 'Company created successfully',
-            'data' => $company
+            'data' => new CompanyResource($company)
         ], 201);
     }
 
@@ -80,7 +81,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'message' => 'Company updated successfully',
-            'data' => $company
+            'data' => new CompanyResource($company)
         ], 200);
     }
 
@@ -100,9 +101,8 @@ class CompanyController extends Controller
     {
         $data = $this->companyRepository->searchCompany($request->search);
 
-        return response()->json([
-            'message' => 'Company list fetched successfully',
-            'data' => $data
-        ], 200);
+        return CompanyResource::collection($data)->additional([
+            'message' => 'Company list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 }

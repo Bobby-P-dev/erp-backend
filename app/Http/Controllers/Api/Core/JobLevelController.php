@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Http\Resources\Core\JobLevelResource;
+
 use App\Http\Controllers\Controller;
 use App\Repositories\Core\JobLevelRepository;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class JobLevelController extends Controller
@@ -18,21 +21,19 @@ class JobLevelController extends Controller
     public function index(Request $request)
     {
         $data = $this->jobLevelRepository->all($request->search);
-        
-        return response()->json([
-            'message' => 'Job Level list fetched successfully',
-            'data' => $data,
-        ], 200);
+
+        return JobLevelResource::collection($data)->additional([
+            'message' => 'Job Level list fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function search(Request $request)
     {
         $data = $this->jobLevelRepository->searchJobLevel($request->search);
 
-        return response()->json([
-            'message' => 'Job Level search fetched successfully',
-            'data' => $data
-        ], 200);
+        return JobLevelResource::collection($data)->additional([
+            'message' => 'Job Level search fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function store(Request $request)
@@ -49,7 +50,7 @@ class JobLevelController extends Controller
 
         return response()->json([
             'message' => 'Job Level created successfully',
-            'data' => $data,
+            'data' => new JobLevelResource($data),
         ], 201);
     }
 
@@ -59,7 +60,7 @@ class JobLevelController extends Controller
 
         return response()->json([
             'message' => 'Job Level details fetched successfully',
-            'data' => $data
+            'data' => new JobLevelResource($data)
         ], 200);
     }
 
@@ -75,7 +76,7 @@ class JobLevelController extends Controller
 
         return response()->json([
             'message' => 'Job Level updated successfully',
-            'data' => $data
+            'data' => new JobLevelResource($data)
         ], 200);
     }
 
@@ -87,7 +88,7 @@ class JobLevelController extends Controller
             return response()->json([
                 'message' => 'Job Level deleted successfully'
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->errorInfo[1] == 1451) {
                 return response()->json([
                     'message' => 'Cannot delete Job Level because it is in use.'

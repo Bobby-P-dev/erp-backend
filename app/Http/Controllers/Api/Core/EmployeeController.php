@@ -9,6 +9,7 @@ use App\Http\Resources\Core\EmployeeResource;
 use App\Models\Core\DivisionPosition;
 use App\Repositories\Core\EmployeeRepository;
 use App\Services\Core\EmployeeService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -43,7 +44,7 @@ class EmployeeController extends Controller
 
         return response()->json([
             'message' => 'Employee created successfully',
-            'data' => $employee
+            'data' => new EmployeeResource($employee)
         ], 201);
     }
 
@@ -92,7 +93,7 @@ class EmployeeController extends Controller
             return response()->json([
                 'message' => 'Employee deleted successfully',
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->errorInfo[1] == 1451) {
                 return response()->json([
                     'message' => 'Cannot delete employee because it is in use.'
@@ -109,10 +110,9 @@ class EmployeeController extends Controller
     {
         $data = $this->employeeRepository->getDivision($request->search, $request->company_id);
 
-        return response()->json([
-            'message' => 'Division fetched successfully',
-            'data' => $data
-        ]);
+        return EmployeeResource::collection($data)->additional([
+            'message' => 'Division fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 
     public function getPosition(Request $request, int $divisionId)
@@ -121,7 +121,7 @@ class EmployeeController extends Controller
 
         return response()->json([
             'message' => 'Position fetched successfully',
-            'data' => $data
+            'data' => EmployeeResource::collection($data)
         ]);
     }
 
@@ -129,9 +129,8 @@ class EmployeeController extends Controller
     {
         $data = $this->employeeRepository->searchEmployee($request->search);
 
-        return response()->json([
-            'message' => 'Employee search results fetched successfully',
-            'data' => $data
-        ]);
+        return EmployeeResource::collection($data)->additional([
+            'message' => 'Employee search results fetched successfully'
+        ])->response()->setStatusCode(200);
     }
 }
