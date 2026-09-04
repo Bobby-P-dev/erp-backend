@@ -8,7 +8,7 @@ class CompanyRepository
 {
     public function all($search = null)
     {
-        $query = Company::select('id', 'name', 'code', 'is_active')->orderBy('name', 'asc');
+        $query = Company::select('id', 'name', 'code', 'is_active')->latest();
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {

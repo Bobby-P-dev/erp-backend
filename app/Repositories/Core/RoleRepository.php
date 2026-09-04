@@ -8,7 +8,7 @@ class RoleRepository
 {
     public function all($search = null)
     {
-        $query = Role::orderBy('name', 'asc');
+        $query = Role::select('id', 'name')->latest();
 
         if (filled($search)) {
             $query->where('name', 'like', "%{$search}%");

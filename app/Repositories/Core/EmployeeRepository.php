@@ -13,7 +13,7 @@ class EmployeeRepository
 {
     public function all($search = null, array $filter = [])
     {
-        $query = Employee::with(['company', 'division', 'position', 'jobLevel'])->orderBy('nik', 'asc');
+        $query = Employee::with(['company', 'division', 'position', 'jobLevel'])->orderBy('name', 'asc');
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {

@@ -8,7 +8,7 @@ class JobLevelRepository
 {
     public function all($search = null)
     {
-        $query = JobLevel::orderBy('name', 'asc');
+        $query = JobLevel::select('id', 'name', 'code', 'is_active')->latest();
         if (filled($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -30,7 +30,7 @@ class JobLevelRepository
             });
         }
 
-        return $query->limit(10)->get();
+        return $query->limit(5)->get();
     }
 
     public function find($id)

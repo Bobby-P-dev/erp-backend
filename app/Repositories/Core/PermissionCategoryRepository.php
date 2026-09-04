@@ -8,7 +8,7 @@ class PermissionCategoryRepository
 {
     public function all($search = null)
     {
-        $query = PermissionCategory::orderBy('name', 'asc');
+        $query = PermissionCategory::select('id', 'name')->latest();
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {

@@ -15,9 +15,9 @@ class PositionService
         $this->positionRepository = new PositionRepository();
     }
 
-    public function getAll($search = null, $filter = [])
+    public function getAll($search, $filter = [])
     {
-        $search = strtoupper((string) $search);
+        $search = strtoupper($search);
         return $this->positionRepository->all($search, $filter);
     }
 
@@ -58,7 +58,7 @@ class PositionService
             }
 
             $positionData = collect($data)->except('division_ids')->toArray();
-            
+
             $this->positionRepository->update($positionData, $id);
             $position = $this->positionRepository->find($id);
 

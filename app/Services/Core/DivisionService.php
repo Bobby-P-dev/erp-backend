@@ -35,8 +35,12 @@ class DivisionService
 
     public function update(array $data, $id)
     {
-        $data['code'] = strtoupper($data['code']);
-        $data['name'] = strtoupper($data['name']);
+        if (isset($data['code'])) {
+            $data['code'] = strtoupper($data['code']);
+        }
+        if (isset($data['name'])) {
+            $data['name'] = strtoupper($data['name']);
+        }
 
         return $this->divisionRepository->update($data, $id);
     }

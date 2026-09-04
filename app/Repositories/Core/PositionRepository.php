@@ -8,7 +8,7 @@ class PositionRepository
 {
     public function all($search = null, array $filter = [])
     {
-        $query = Position::with(['divisions:id,company_id,name', 'divisions.company:id,name'])->orderBy('name', 'asc');
+        $query = Position::select('id', 'code', 'name', 'is_active')->with(['divisions:id,company_id,name', 'divisions.company:id,name'])->latest();
 
         if (filled($search)) {
             $query->where(function ($q) use ($search) {

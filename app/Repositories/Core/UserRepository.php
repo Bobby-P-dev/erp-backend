@@ -19,7 +19,7 @@ class UserRepository
             'employee.division',
             'employee.position',
             'employee.jobLevel'
-        ]);
+        ])->latest();
 
         if (filled($search)) {
             $query->whereHas('employee', function ($q) use ($search) {
