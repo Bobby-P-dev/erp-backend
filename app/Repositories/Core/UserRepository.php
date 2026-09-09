@@ -18,12 +18,18 @@ class UserRepository
             'employee.company',
             'employee.division',
             'employee.position',
-            'employee.jobLevel'
+            'employee.jobLevel',
+            'supplier'
         ])->latest();
 
         if (filled($search)) {
-            $query->whereHas('employee', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('employee', function ($empQ) use ($search) {
+                    $empQ->where('name', 'like', "%{$search}%");
+                })->orWhereHas('supplier', function ($supQ) use ($search) {
+                    $supQ->where('name', 'like', "%{$search}%")
+                        ->orWhere('supplier_code', 'like', "%{$search}%");
+                });
             });
         }
 

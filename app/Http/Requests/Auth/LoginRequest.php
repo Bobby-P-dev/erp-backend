@@ -3,12 +3,13 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\Core\Employee;
+use App\Models\Purchasing\Supplier;
 use App\Models\User;
-use Hash;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +32,9 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nik' => ['required', 'string'],
+            'login' => ['sometimes', 'string'],
+            'nik' => ['required_without_all:login,email', 'string'],
+            'email' => ['required_without_all:login,nik', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -45,18 +48,51 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $employee = Employee::where('nik', $this->nik)->first();
-
+        $identifier = $this->input('login') ?? $this->input('email') ?? $this->input('nik');
         $user = null;
-        if ($employee) {
-            $user = User::where('employee_id', $employee->id)->first();
+        $errorField = 'nik';
+
+        // 1. Check if input is an Email or explicitly provided via 'email' field -> Supplier auth
+        if ($this->filled('email') || filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $errorField = $this->filled('email') ? 'email' : ($this->filled('login') ? 'login' : 'email');
+
+            $supplier = Supplier::where('email', $identifier)->first();
+
+            if ($supplier) {
+                if (! $supplier->is_active) {
+                    RateLimiter::hit($this->throttleKey());
+
+                    throw ValidationException::withMessages([
+                        $errorField => __('Supplier account is inactive.'),
+                    ]);
+                }
+
+                $user = User::where('supplier_id', $supplier->id)->first();
+            }
+        } else {
+            // 2. Employee auth via NIK
+            $errorField = $this->filled('nik') ? 'nik' : ($this->filled('login') ? 'login' : 'nik');
+
+            $employee = Employee::where('nik', $identifier)->first();
+
+            if ($employee) {
+                if (! $employee->is_active) {
+                    RateLimiter::hit($this->throttleKey());
+
+                    throw ValidationException::withMessages([
+                        $errorField => __('Employee account is inactive.'),
+                    ]);
+                }
+
+                $user = User::where('employee_id', $employee->id)->first();
+            }
         }
 
-        if (!$user || !Hash::check($this->password, $user->password)) {
+        if (! $user || ! Hash::check($this->password, $user->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'nik' => __('auth.failed'),
+                $errorField => __('auth.failed'),
             ]);
         }
 
@@ -72,7 +108,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -80,8 +116,10 @@ class LoginRequest extends FormRequest
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        $errorField = $this->filled('login') ? 'login' : ($this->filled('email') ? 'email' : 'nik');
+
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            $errorField => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -93,6 +131,8 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('email')) . '|' . $this->ip());
+        $identifier = $this->input('login') ?? $this->input('email') ?? $this->input('nik') ?? '';
+
+        return Str::transliterate(Str::lower($identifier).'|'.$this->ip());
     }
 }
