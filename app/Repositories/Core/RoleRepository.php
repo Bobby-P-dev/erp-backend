@@ -52,6 +52,7 @@ class RoleRepository
     {
         $role = Role::findOrFail($id);
         $role->syncPermissions($permissions);
+
         return $role->load('permissions');
     }
 }

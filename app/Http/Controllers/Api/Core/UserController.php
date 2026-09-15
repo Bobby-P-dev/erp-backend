@@ -2,28 +2,24 @@
 
 namespace App\Http\Controllers\Api\Core;
 
-use App\Http\Resources\Core\UserResource;
-
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Core\UserResource;
 use App\Services\Core\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
-    protected UserService $userService;
-
-    public function __construct()
-    {
-        $this->userService = new UserService();
-    }
+    public function __construct(
+        protected UserService $userService
+    ) {}
 
     public function index(Request $request)
     {
         $data = $this->userService->getAll($request->search, $request->filter ?? []);
 
         return UserResource::collection($data)->additional([
-            'message' => 'Users fetched successfully'
+            'message' => 'Users fetched successfully',
         ])->response()->setStatusCode(200);
     }
 
@@ -31,14 +27,14 @@ class UserController extends Controller
     {
         $request->validate([
             'roles' => 'required|array',
-            'roles.*' => 'exists:roles,id'
+            'roles.*' => 'exists:roles,id',
         ]);
 
         $user = $this->userService->syncRoles($id, $request->roles);
 
         return response()->json([
             'message' => 'Roles synced successfully',
-            'data' => new UserResource($user)
+            'data' => new UserResource($user),
         ], 200);
     }
 
@@ -68,7 +64,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User password updated successfully',
-            'data' => $user
+            'data' => $user,
         ], 200);
     }
 }

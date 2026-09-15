@@ -6,7 +6,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class EmployeeUpdateRequest extends FormRequest
+class UpdateEmployeeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -30,7 +30,7 @@ class EmployeeUpdateRequest extends FormRequest
                 'required',
                 Rule::unique('employees')->where(function ($query) {
                     return $query->where('company_id', $this->company_id ?? null);
-                })->ignore($this->route('id'))
+                })->ignore($this->route('id')),
             ],
             'company_id' => 'sometimes|required|exists:companies,id',
             'division_id' => 'sometimes|required|exists:divisions,id',

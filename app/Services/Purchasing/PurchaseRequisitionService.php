@@ -3,6 +3,7 @@
 namespace App\Services\Purchasing;
 
 use App\Models\Purchasing\PurchaseRequisition;
+use App\Repositories\Purchasing\PurchaseRequisitionRepository;
 use App\Services\Core\DocumentNumberService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class PurchaseRequisitionService
      * Create a new service instance.
      */
     public function __construct(
+        protected PurchaseRequisitionRepository $purchaseRequisitionRepository,
         protected DocumentNumberService $documentNumberService
     ) {}
 
@@ -49,28 +51,23 @@ class PurchaseRequisitionService
                 'notes' => $data['notes'] ?? null,
             ];
 
-            $purchaseRequisition = PurchaseRequisition::create($headerData);
+            $purchaseRequisition = $this->purchaseRequisitionRepository->create($headerData);
 
             if (! empty($data['items']) && is_array($data['items'])) {
                 foreach ($data['items'] as $itemData) {
-                    $purchaseRequisition->items()->create([
+                    $this->purchaseRequisitionRepository->createItem($purchaseRequisition, [
                         'item_id' => $itemData['item_id'],
                         'unit_id' => $itemData['unit_id'],
                         'quantity' => $itemData['quantity'],
+                        'accounting_category_id' => $itemData['accounting_category_id'] ?? null,
+                        'accounting_subcategory_id' => $itemData['accounting_subcategory_id'] ?? null,
+                        'accounting_account_id' => $itemData['accounting_account_id'] ?? null,
                         'notes' => $itemData['notes'] ?? null,
                     ]);
                 }
             }
 
-            $purchaseRequisition->load([
-                'company',
-                'division',
-                'requester.employee',
-                'items.item',
-                'items.unit',
-            ]);
-
-            return $purchaseRequisition;
+            return $this->purchaseRequisitionRepository->loadRelations($purchaseRequisition);
         });
     }
 
@@ -79,13 +76,7 @@ class PurchaseRequisitionService
      */
     public function list(int $perPage = 10): LengthAwarePaginator
     {
-        return PurchaseRequisition::with([
-            'company',
-            'division',
-            'requester.employee',
-            'items.item',
-            'items.unit',
-        ])->latest('id')->paginate($perPage);
+        return $this->purchaseRequisitionRepository->paginate($perPage);
     }
 
     /**
@@ -93,13 +84,7 @@ class PurchaseRequisitionService
      */
     public function findById(int $id): PurchaseRequisition
     {
-        return PurchaseRequisition::with([
-            'company',
-            'division',
-            'requester.employee',
-            'items.item',
-            'items.unit',
-        ])->findOrFail($id);
+        return $this->purchaseRequisitionRepository->findOrFail($id);
     }
 
     /**
@@ -113,17 +98,10 @@ class PurchaseRequisitionService
             throw new RuntimeException("Purchase Requisition with status '{$purchaseRequisition->status}' cannot be submitted.");
         }
 
-        $purchaseRequisition->status = 'submitted';
-        $purchaseRequisition->save();
-
-        $purchaseRequisition->load([
-            'company',
-            'division',
-            'requester.employee',
-            'items.item',
-            'items.unit',
+        $this->purchaseRequisitionRepository->update($purchaseRequisition, [
+            'status' => 'submitted',
         ]);
 
-        return $purchaseRequisition;
+        return $this->purchaseRequisitionRepository->loadRelations($purchaseRequisition);
     }
 }

@@ -17,7 +17,7 @@ class PositionRepository
             });
         }
 
-        if (!empty($filter['division_ids'])) {
+        if (! empty($filter['division_ids'])) {
             $query->whereHas('divisions', function ($q) use ($filter) {
                 $q->whereIn('division_id', $filter['division_ids']);
             });
@@ -52,6 +52,7 @@ class PositionRepository
             $position->divisions()->detach();
             $position->delete();
         }
+
         return $position;
     }
 

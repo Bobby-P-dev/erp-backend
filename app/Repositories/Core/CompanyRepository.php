@@ -34,6 +34,7 @@ class CompanyRepository
     {
         $company = $this->find($id);
         $company->update($data);
+
         return $company;
     }
 
@@ -41,6 +42,7 @@ class CompanyRepository
     {
         $company = $this->find($id);
         $company->delete();
+
         return $company;
     }
 

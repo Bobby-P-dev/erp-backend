@@ -7,33 +7,33 @@ use App\Repositories\Core\DivisionRepository;
 
 class DivisionService
 {
-    protected DivisionRepository $divisionRepository;
-
-    public function __construct()
-    {
-        $this->divisionRepository = new DivisionRepository();
-    }
+    public function __construct(
+        protected DivisionRepository $divisionRepository
+    ) {}
 
     public function store(array $data): Division
     {
         $data['code'] = strtoupper($data['code']);
         $data['name'] = strtoupper($data['name']);
 
-        try {
-            return $this->divisionRepository->create($data);
-        } catch (\Exception $e) {
-            throw $e;
-        }
+        return $this->divisionRepository->create($data);
     }
 
-    public function getAll($search, $filter = [])
+    public function getAll(?string $search = null, array $filter = [])
     {
-        $search = strtoupper($search);
+        if (! empty($search)) {
+            $search = strtoupper($search);
+        }
 
         return $this->divisionRepository->all($search, $filter);
     }
 
-    public function update(array $data, $id)
+    public function find(int|string $id): ?Division
+    {
+        return $this->divisionRepository->find($id);
+    }
+
+    public function update(array $data, int|string $id)
     {
         if (isset($data['code'])) {
             $data['code'] = strtoupper($data['code']);
@@ -45,8 +45,13 @@ class DivisionService
         return $this->divisionRepository->update($data, $id);
     }
 
-    public function delete($id)
+    public function delete(int|string $id)
     {
         return $this->divisionRepository->delete($id);
+    }
+
+    public function searchDivision(?string $search = null)
+    {
+        return $this->divisionRepository->searchDivision($search);
     }
 }

@@ -47,6 +47,7 @@ class JobLevelRepository
     {
         $jobLevel = JobLevel::findOrFail($id);
         $jobLevel->updateOrFail($data);
+
         return $jobLevel;
     }
 
@@ -54,6 +55,7 @@ class JobLevelRepository
     {
         $jobLevel = JobLevel::findOrFail($id);
         $jobLevel->deleteOrFail();
+
         return $jobLevel;
     }
 }

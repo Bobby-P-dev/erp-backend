@@ -84,6 +84,21 @@ class StorePurchaseRequisitionRequest extends FormRequest
                 'gt:0',
                 'max:999999999999.999',
             ],
+            'items.*.accounting_category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('accounting_categories', 'id')->whereNull('deleted_at'),
+            ],
+            'items.*.accounting_subcategory_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('accounting_subcategories', 'id')->whereNull('deleted_at'),
+            ],
+            'items.*.accounting_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('accounting_accounts', 'id')->whereNull('deleted_at'),
+            ],
             'items.*.notes' => [
                 'nullable',
                 'string',

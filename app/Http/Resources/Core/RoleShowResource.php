@@ -28,14 +28,14 @@ class RoleShowResource extends JsonResource
                         'name' => $permission->name,
                         'label' => $permission->label,
                     ];
-                })->values()->toArray()
+                })->values()->toArray(),
             ];
         }
 
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'grouped_permissions' => $formattedPermissions
+            'grouped_permissions' => $formattedPermissions,
         ];
     }
 }

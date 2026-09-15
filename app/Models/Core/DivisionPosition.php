@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class DivisionPosition extends Model
 {
     protected $table = 'division_positions';
+
     protected $fillable = [
         'division_id',
         'position_id',

@@ -138,4 +138,56 @@ Before relying on a package's API, confirm its installed version:
 - Rerun a test after each change to it.
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
+=== modular-monolith-clean-code rules ===
+
+# Clean Code & Modular Monolith Guidelines
+
+## 1. Domain & Module Separation (Modular Monolith)
+- Proyek ini menerapkan arsitektur **Modular Monolith**.
+- Setiap modul bisnis dipisahkan ke dalam folder domain masing-masing pada setiap layer:
+  - `Core`: Master data utama perusahaan (Company, Division, Position, JobLevel, Employee, User, Role, Permission, Accounting).
+  - `Purchasing`: Pengadaan barang, Purchase Requisitions, Supplier & relasi sub-entitas (Supplier Contacts, Bank Accounts, Documents, Supplier Items catalog).
+  - Modul baru di masa mendatang (e.g. `Inventory`, `Sales`, `Finance`) wajib mengikuti pola modular ini.
+- Struktur folder per layer harus mencerminkan nama modul:
+  - `app/Models/{Module}/`
+  - `app/Repositories/{Module}/`
+  - `app/Services/{Module}/`
+  - `app/Http/Controllers/Api/{Version}/{Module}/`
+  - `app/Http/Requests/{Module}/`
+  - `app/Http/Resources/{Module}/`
+  - `database/factories/{Module}/`
+  - `tests/Feature/{Module}/`
+
+## 2. Repository & Service Flow Pattern
+- **Repository (Wajib untuk Query Database)**:
+  - Semua query database / Eloquent (where, filtering, joins, search, pagination) WAJIB diisolasi di dalam Repository.
+  - Controller dan Service dilarang memanggil query Eloquent langsung jika ada layer data yang dapat diabstraksi.
+- **Service (Untuk Business Logic)**:
+  - Gunakan Service jika terdapat logika bisnis yang berat, orkestrasi multi-step, DB Transaction lintas tabel, auto-generate kode dokumen, kalkulasi harga/pajak, atau auto-reset status (misalnya status `is_primary`).
+  - Jangan membuat Service kosong yang hanya menjadi passthrough proxy ke Repository jika tidak ada logika bisnis di dalamnya.
+- **Alur Arsitektur yang Sah**:
+  1. `Controller -> Repository`: Untuk CRUD sederhana dan query langsung tanpa logika bisnis kompleks.
+  2. `Controller -> Service -> Repository`: Untuk operasi bisnis kompleks, multi-step, transaksi, dan orkestrasi.
+  3. `Controller -> Service`: Diizinkan tanpa Repository jika Service murni mengurus third-party API, perhitungan matematis/utilitas, atau notifikasi.
+
+## 3. Dependency Injection & PHP 8.3 Standards
+- Wajib gunakan **PHP 8 Constructor Property Promotion** dengan dependency injection container Laravel:
+  ```php
+  public function __construct(
+      protected SupplierRepository $repository,
+      protected SupplierService $service
+  ) {}
+  ```
+- **DILARANG KERAS** melakukan instansiasi manual dengan operator `new` di dalam controller (contoh: `$this->repo = new SupplierRepository;`).
+
+## 4. Form Request Rules
+- **Wajib Gunakan Form Request** jika jumlah field input request **> 4 parameter**, atau jika validasi melibatkan aturan kompleks (misal regex, conditional rules, exists/unique rule dengan pengecualian ID).
+- Inline validation (`$request->validate([...])`) hanya diizinkan untuk request kecil yang `<= 4 parameter` sederhana.
+- Konvensi penamaan Form Request: `{Action}{Model}Request` (contoh: `StoreSupplierRequest`, `UpdateSupplierRequest`, `StoreEmployeeRequest`).
+
+## 5. API Response & Eloquent Resources
+- **Setiap endpoint API WAJIB menggunakan Eloquent API Resource**. Dilarang mengembalikan raw Model Eloquent atau raw array data.
+- Resource harus berada di dalam namespace modul masing-masing (`App\Http\Resources\{Module}\{Model}Resource`).
+- Response JSON harus konsisten menyediakan key `message` dan `data` (serta `meta` untuk pagination).
+
 </laravel-boost-guidelines>

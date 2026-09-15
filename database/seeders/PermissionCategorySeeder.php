@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Core\PermissionCategory;
 use Illuminate\Database\Seeder;
 
 class PermissionCategorySeeder extends Seeder
@@ -23,7 +23,7 @@ class PermissionCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            \App\Models\Core\PermissionCategory::firstOrCreate(['name' => $category]);
+            PermissionCategory::firstOrCreate(['name' => $category]);
         }
     }
 }

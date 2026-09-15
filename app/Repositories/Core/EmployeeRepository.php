@@ -5,9 +5,7 @@ namespace App\Repositories\Core;
 use App\Models\Core\Division;
 use App\Models\Core\DivisionPosition;
 use App\Models\Core\Employee;
-use App\Models\Core\Position;
 use Auth;
-use Illuminate\Cache\RateLimiting\Limit;
 
 class EmployeeRepository
 {
@@ -72,6 +70,7 @@ class EmployeeRepository
     {
         $employee = Employee::findOrFail($id);
         $employee->updateOrFail($data);
+
         return $employee;
     }
 
@@ -79,12 +78,13 @@ class EmployeeRepository
     {
         $employee = Employee::findOrFail($id);
         $employee->deleteOrFail();
+
         return $employee;
     }
 
     public function getDivision($search, $companyId = null)
     {
-        $query = Division::select("id", "name")->where("is_active", true);
+        $query = Division::select('id', 'name')->where('is_active', true);
 
         if ($companyId) {
             $query->where('company_id', $companyId);

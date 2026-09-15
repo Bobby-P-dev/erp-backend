@@ -19,7 +19,7 @@ class UserRepository
             'employee.division',
             'employee.position',
             'employee.jobLevel',
-            'supplier'
+            'supplier',
         ])->latest();
 
         if (filled($search)) {

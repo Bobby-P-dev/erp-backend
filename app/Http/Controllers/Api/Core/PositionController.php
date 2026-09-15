@@ -2,37 +2,32 @@
 
 namespace App\Http\Controllers\Api\Core;
 
-use App\Http\Resources\Core\PositionResource;
-
 use App\Http\Controllers\Controller;
-use App\Repositories\Core\PositionRepository;
+use App\Http\Resources\Core\PositionResource;
 use App\Services\Core\PositionService;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PositionController extends Controller
 {
-    protected PositionService $positionService;
-    protected PositionRepository $positionRepository;
+    public function __construct(
+        protected PositionService $positionService
+    ) {}
 
-    public function __construct()
-    {
-        $this->positionService = new PositionService();
-        $this->positionRepository = new PositionRepository();
-    }
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $data = $this->positionService->getAll($request->search, $request->filter ?? []);
 
         return PositionResource::collection($data)->additional([
-            'message' => 'Position list fetched successfully'
+            'message' => 'Position list fetched successfully',
         ])->response()->setStatusCode(200);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validate = $request->validate([
             'name' => 'required',
@@ -43,37 +38,34 @@ class PositionController extends Controller
 
         $position = $this->positionService->store($validate);
 
-        return response()->json([
+        return (new PositionResource($position))->additional([
             'message' => 'Position created successfully',
-            'data' => new PositionResource($position)
-        ], 201);
+        ])->response()->setStatusCode(201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $id): JsonResponse
     {
-        $position = $this->positionRepository->find($id);
-        if (!$position) {
+        $position = $this->positionService->find($id);
+        if (! $position) {
             return response()->json(['message' => 'Position not found'], 404);
         }
-        $position->load('divisions:id,company_id,name');
 
-        return response()->json([
+        return (new PositionResource($position))->additional([
             'message' => 'Position details fetched successfully',
-            'data' => $position
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validate = $request->validate([
             'name' => 'sometimes|required',
-            'code' => 'sometimes|required|unique:positions,code,' . $id,
+            'code' => 'sometimes|required|unique:positions,code,'.$id,
             'is_active' => 'nullable|boolean',
             'division_ids' => 'sometimes|array',
             'division_ids.*' => 'exists:divisions,id',
@@ -81,27 +73,26 @@ class PositionController extends Controller
 
         $position = $this->positionService->update($validate, $id);
 
-        return response()->json([
+        return (new PositionResource($position))->additional([
             'message' => 'Position updated successfully',
-            'data' => new PositionResource($position)
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         try {
-            $this->positionRepository->delete($id);
+            $this->positionService->delete($id);
 
             return response()->json([
-                'message' => 'Position deleted successfully'
+                'message' => 'Position deleted successfully',
             ], 200);
         } catch (QueryException $e) {
-            if ($e->getCode() == "23000") {
+            if ($e->getCode() == '23000') {
                 return response()->json([
-                    'message' => 'Posisi tidak bisa dihapus karena sedang digunakan oleh karyawan.'
+                    'message' => 'Posisi tidak bisa dihapus karena sedang digunakan oleh karyawan.',
                 ], 409);
             }
 
@@ -109,13 +100,12 @@ class PositionController extends Controller
         }
     }
 
-    public function searchPosition(Request $request)
+    public function searchPosition(Request $request): JsonResponse
     {
-        $data = $this->positionRepository->searchPosition($request->search);
+        $data = $this->positionService->searchPosition($request->search);
 
-        return response()->json([
+        return PositionResource::collection($data)->additional([
             'message' => 'Position list fetched successfully',
-            'data' => PositionResource::collection($data)
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 }

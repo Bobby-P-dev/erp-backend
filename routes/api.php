@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\Core\AccountingAccountController;
+use App\Http\Controllers\Api\Core\AccountingCategoryController;
+use App\Http\Controllers\Api\Core\AccountingSubcategoryController;
 use App\Http\Controllers\Api\Core\CompanyController;
 use App\Http\Controllers\Api\Core\DivisionController;
 use App\Http\Controllers\Api\Core\EmployeeController;
@@ -10,7 +13,11 @@ use App\Http\Controllers\Api\Core\PositionController;
 use App\Http\Controllers\Api\Core\RoleController;
 use App\Http\Controllers\Api\Core\UserController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequisitionController;
+use App\Http\Controllers\Api\V1\Purchasing\SupplierBankAccountController;
+use App\Http\Controllers\Api\V1\Purchasing\SupplierContactController;
 use App\Http\Controllers\Api\V1\Purchasing\SupplierController;
+use App\Http\Controllers\Api\V1\Purchasing\SupplierDocumentController;
+use App\Http\Controllers\Api\V1\Purchasing\SupplierItemController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -92,6 +99,30 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::patch('job-level/{id}/update', [JobLevelController::class, 'update']);
     Route::delete('job-level/{id}/delete', [JobLevelController::class, 'destroy']);
 
+    // accounting category
+    Route::get('accounting-category/get-all', [AccountingCategoryController::class, 'index']);
+    Route::get('accounting-category/search', [AccountingCategoryController::class, 'search']);
+    Route::post('accounting-category/store', [AccountingCategoryController::class, 'store']);
+    Route::get('accounting-category/{id}/show', [AccountingCategoryController::class, 'show']);
+    Route::patch('accounting-category/{id}/update', [AccountingCategoryController::class, 'update']);
+    Route::delete('accounting-category/{id}/delete', [AccountingCategoryController::class, 'destroy']);
+
+    // accounting subcategory
+    Route::get('accounting-subcategory/get-all', [AccountingSubcategoryController::class, 'index']);
+    Route::get('accounting-subcategory/search', [AccountingSubcategoryController::class, 'search']);
+    Route::post('accounting-subcategory/store', [AccountingSubcategoryController::class, 'store']);
+    Route::get('accounting-subcategory/{id}/show', [AccountingSubcategoryController::class, 'show']);
+    Route::patch('accounting-subcategory/{id}/update', [AccountingSubcategoryController::class, 'update']);
+    Route::delete('accounting-subcategory/{id}/delete', [AccountingSubcategoryController::class, 'destroy']);
+
+    // accounting account
+    Route::get('accounting-account/get-all', [AccountingAccountController::class, 'index']);
+    Route::get('accounting-account/search', [AccountingAccountController::class, 'search']);
+    Route::post('accounting-account/store', [AccountingAccountController::class, 'store']);
+    Route::get('accounting-account/{id}/show', [AccountingAccountController::class, 'show']);
+    Route::patch('accounting-account/{id}/update', [AccountingAccountController::class, 'update']);
+    Route::delete('accounting-account/{id}/delete', [AccountingAccountController::class, 'destroy']);
+
     // purchase requisitions
     Route::get('purchase-requisitions', [PurchaseRequisitionController::class, 'index']);
     Route::post('purchase-requisitions', [PurchaseRequisitionController::class, 'store']);
@@ -99,7 +130,41 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('purchase-requisitions/{id}/submit', [PurchaseRequisitionController::class, 'submit']);
 
     // suppliers
+    Route::get('suppliers', [SupplierController::class, 'index']);
+    Route::post('suppliers', [SupplierController::class, 'store']);
+    Route::get('suppliers/{id}', [SupplierController::class, 'show']);
+    Route::patch('suppliers/{id}', [SupplierController::class, 'update']);
+    Route::delete('suppliers/{id}', [SupplierController::class, 'destroy']);
     Route::get('supplier/search', [SupplierController::class, 'search']);
+
+    // supplier items
+    Route::get('supplier-items', [SupplierItemController::class, 'index']);
+    Route::post('supplier-items', [SupplierItemController::class, 'store']);
+    Route::get('supplier-items/{id}', [SupplierItemController::class, 'show']);
+    Route::patch('supplier-items/{id}', [SupplierItemController::class, 'update']);
+    Route::delete('supplier-items/{id}', [SupplierItemController::class, 'destroy']);
+
+    // supplier contacts
+    Route::get('supplier-contacts', [SupplierContactController::class, 'index']);
+    Route::post('supplier-contacts', [SupplierContactController::class, 'store']);
+    Route::get('supplier-contacts/{id}', [SupplierContactController::class, 'show']);
+    Route::patch('supplier-contacts/{id}', [SupplierContactController::class, 'update']);
+    Route::delete('supplier-contacts/{id}', [SupplierContactController::class, 'destroy']);
+
+    // supplier documents
+    Route::get('supplier-documents', [SupplierDocumentController::class, 'index']);
+    Route::post('supplier-documents', [SupplierDocumentController::class, 'store']);
+    Route::get('supplier-documents/{id}', [SupplierDocumentController::class, 'show']);
+    Route::patch('supplier-documents/{id}', [SupplierDocumentController::class, 'update']);
+    Route::delete('supplier-documents/{id}', [SupplierDocumentController::class, 'destroy']);
+    Route::post('supplier-documents/{id}/verify', [SupplierDocumentController::class, 'verify']);
+
+    // supplier bank accounts
+    Route::get('supplier-bank-accounts', [SupplierBankAccountController::class, 'index']);
+    Route::post('supplier-bank-accounts', [SupplierBankAccountController::class, 'store']);
+    Route::get('supplier-bank-accounts/{id}', [SupplierBankAccountController::class, 'show']);
+    Route::patch('supplier-bank-accounts/{id}', [SupplierBankAccountController::class, 'update']);
+    Route::delete('supplier-bank-accounts/{id}', [SupplierBankAccountController::class, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

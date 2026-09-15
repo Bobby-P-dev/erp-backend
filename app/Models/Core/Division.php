@@ -12,7 +12,7 @@ class Division extends Model
     protected $table = 'divisions';
 
     protected $hidden = [
-        'pivot'
+        'pivot',
     ];
 
     protected $fillable = [

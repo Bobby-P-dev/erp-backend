@@ -4,19 +4,18 @@ namespace App\Services\Core;
 
 use App\Repositories\Core\UserRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
-    protected UserRepository $userRepository;
-
-    public function __construct()
-    {
-        $this->userRepository = new UserRepository();
-    }
+    public function __construct(
+        protected UserRepository $userRepository
+    ) {}
 
     public function getAll($search = null, array $filter = [])
     {
         $search = strtolower($search);
+
         return $this->userRepository->getAll($search, $filter);
     }
 
@@ -38,8 +37,9 @@ class UserService
     public function updatePassword(int $id, string $newPassword)
     {
         $user = $this->userRepository->find($id);
-        $user->password = \Illuminate\Support\Facades\Hash::make($newPassword);
+        $user->password = Hash::make($newPassword);
         $user->save();
+
         return $user;
     }
 }

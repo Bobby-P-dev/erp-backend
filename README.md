@@ -1,58 +1,125 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ERP Backend System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modular monolith ERP Backend application built with **Laravel 11** on **PHP 8.3**.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🏛️ Arsitektur: Clean Code & Modular Monolith
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Aplikasi ini mengadopsi prinsip **Clean Code** dan arsitektur **Modular Monolith**, di mana setiap modul bisnis dipisahkan secara tegas ke dalam folder domain masing-masing pada setiap layer.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Pembagian Modul Domain
+- **`Core`**: Berperan sebagai fondasi dan *Master Data Utama* sistem perusahaan:
+  - Organisasi & Perusahaan: `Company`, `Division`, `Position`, `JobLevel`
+  - Pengguna & Otorisasi: `Employee`, `User`, `Role`, `Permission`, `PermissionCategory`
+  - Finansial & Akuntansi: `AccountingCategory`, `AccountingSubcategory`, `AccountingAccount`
+- **`Purchasing`**: Menangani operasional pengadaan barang dan manajemen mitra:
+  - Transaksi Pengadaan: `PurchaseRequisition`, `PurchaseRequisitionItem`
+  - Manajemen Pemasok: `Supplier`, `SupplierContact`, `SupplierBankAccount`, `SupplierDocument`
+  - Katalog Mitra: `SupplierItem`
+- **Modul Masa Depan**: Modul baru (misalnya `Inventory`, `Finance`, `Sales`) wajib mengikuti pola modularitas yang sama.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 2. Standar Struktur Folder Per Layer
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+app/
+├── Http/
+│   ├── Controllers/
+│   │   └── Api/
+│   │       ├── Core/            <-- Modul Core Controllers
+│   │       └── V1/
+│   │           └── Purchasing/  <-- Modul Purchasing Controllers
+│   ├── Requests/
+│   │   ├── Core/                <-- Form Requests Modul Core
+│   │   └── Purchasing/          <-- Form Requests Modul Purchasing
+│   └── Resources/
+│       ├── Core/                <-- API Resources Modul Core
+│       └── Purchasing/          <-- API Resources Modul Purchasing
+├── Models/
+│   ├── Core/                    <-- Eloquent Models Core
+│   └── Purchasing/              <-- Eloquent Models Purchasing
+├── Repositories/
+│   ├── Core/                    <-- Database Queries & Filters Core
+│   └── Purchasing/              <-- Database Queries & Filters Purchasing
+└── Services/
+    ├── Core/                    <-- Business Logic Core
+    └── Purchasing/              <-- Business Logic Purchasing
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 🔄 Pola Alur: Repository & Service
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### A. Repository Pattern (Wajib untuk Query Database)
+- Semua pemanggilan query Eloquent/DB (`where`, `join`, `orderBy`, `paginate`, `with`) **WAJIB** berada di dalam layer `Repository`.
+- Controller dilarang melakukan query database langsung yang kompleks.
 
-## Code of Conduct
+### B. Service Pattern (Khusus Business Logic)
+Gunakan `Service` jika terdapat salah satu kondisi berikut:
+1. Terdapat logika bisnis yang berat atau kalkulasi harga/pajak.
+2. Melibatkan operasi multi-step atau `DB::transaction` lintas tabel.
+3. Auto-generation nomor dokumen atau kode unik (misal `PR-2026-000001`, `SUP-0001`).
+4. Auto-reset state data (misal: saat kontak/rekening baru ditandai `is_primary = true`, kontak lama di-reset ke `false`).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+*Catatan:* Jangan membuat Service kosong yang hanya menjadi perantara tanpa logika (*empty passthrough proxy*).
 
-## Security Vulnerabilities
+### C. Alur yang Diizinkan Sesuai Kebutuhan
+1. **`Controller -> Repository`**
+   - Digunakan untuk: CRUD standar, paginasi filter sederhana, dan pengambilan data langsung tanpa logika bisnis kompleks.
+   - *Contoh:* `AccountingCategoryController`, `AccountingAccountController`.
+2. **`Controller -> Service -> Repository`**
+   - Digunakan untuk: Fitur yang memiliki aturan bisnis, validasi lintas data, orkestrasi relasi, atau auto-reset.
+   - *Contoh:* `SupplierController`, `SupplierContactController`, `PurchaseRequisitionController`.
+3. **`Controller -> Service`**
+   - Digunakan untuk: Fitur atau utilitas tanpa penyimpanan database langsung, integrasi API pihak ketiga, atau perhitungan matematis murni.
+   - *Contoh:* `DocumentNumberService`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## 📋 Aturan Request & Response API
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 1. Form Request Validation
+- **Wajib menggunakan Form Request dedicated** jika jumlah field input request **> 4 parameter**, atau jika aturan validasinya rumit (misalnya *custom validation rule*, regex, conditional rules, atau pengecualian ID pada unique rule).
+- **Inline validation (`$request->validate(...)`)** hanya diperkenankan untuk request kecil yang `<= 4 parameter` sederhana.
+- **Konvensi Penamaan:** Gunakan pola `{Action}{Model}Request`:
+  - *Benar:* `StoreSupplierRequest`, `UpdateSupplierRequest`, `StoreEmployeeRequest`
+  - *Hindari:* `EmployeeStoreRequest` (tidak konsisten)
+
+### 2. API Response & Eloquent Resources
+- **Setiap endpoint API WAJIB menggunakan API Resource**. Dilarang mengembalikan raw Model Eloquent atau array associative langsung.
+- Resource ditempatkan pada folder modul yang relevan: `App\Http\Resources\{Module}\{Model}Resource`.
+- Seluruh response JSON harus konsisten menyediakan key `message` dan `data` (serta `meta` untuk pagination).
+
+### 3. Dependency Injection (PHP 8.3)
+- Wajib menggunakan **Constructor Property Promotion**:
+  ```php
+  public function __construct(
+      protected SupplierService $service
+  ) {}
+  ```
+- **Dilarang** melakukan instansiasi manual dengan operator `new` di dalam controller (misal: `$this->repo = new SupplierRepository;`).
+
+---
+
+## 🧪 Panduan Testing
+
+Aplikasi ini menggunakan **PHPUnit** dengan penegakan uji fitur (*Feature Tests*) untuk setiap endpoint:
+```bash
+# Menjalankan seluruh test suite
+php artisan test --compact
+
+# Menjalankan test per modul
+php artisan test tests/Feature/Core --compact
+php artisan test tests/Feature/Purchasing --compact
+```
+
+---
+
+## 🎨 Code Style & Formatting
+
+Format kode distandarisasi menggunakan **Laravel Pint**:
+```bash
+vendor/bin/pint --format agent
+```

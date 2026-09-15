@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(["prefix" => "v1"], function () {
+Route::group(['prefix' => 'v1'], function () {
 
     Route::post('/register', [RegisteredUserController::class, 'store'])
         ->middleware('auth:sanctum')

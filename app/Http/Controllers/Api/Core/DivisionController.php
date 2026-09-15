@@ -2,72 +2,63 @@
 
 namespace App\Http\Controllers\Api\Core;
 
-use App\Http\Resources\Core\DivisionResource;
-
 use App\Http\Controllers\Controller;
-use App\Repositories\Core\DivisionRepository;
+use App\Http\Resources\Core\DivisionResource;
 use App\Services\Core\DivisionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DivisionController extends Controller
 {
-    protected DivisionService $divisionService;
+    public function __construct(
+        protected DivisionService $divisionService
+    ) {}
 
-    protected DivisionRepository $divisionRepository;
-
-    public function __construct()
-    {
-        $this->divisionService = new DivisionService();
-        $this->divisionRepository = new DivisionRepository();
-    }
-
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $data = $this->divisionService->getAll($request->search, $request->filter ?? []);
 
         return DivisionResource::collection($data)->additional([
-            'message' => 'Division list fetched successfully'
+            'message' => 'Division list fetched successfully',
         ])->response()->setStatusCode(200);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'company_id' => 'required|exists:companies,id',
             'name' => 'required',
             'code' => 'required',
-            'is_active' => 'nullable|boolean'
+            'is_active' => 'nullable|boolean',
         ]);
 
         $division = $this->divisionService->store($data);
 
-        return response()->json([
+        return (new DivisionResource($division))->additional([
             'message' => 'Division created successfully',
-            'data' => new DivisionResource($division)
-        ], 201);
+        ])->response()->setStatusCode(201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $id): JsonResponse
     {
-        $division = $this->divisionRepository->find($id);
+        $division = $this->divisionService->find($id);
 
-        if (!$division) {
+        if (! $division) {
             return response()->json(['message' => 'Division not found'], 404);
         }
 
-        return response()->json([
+        return (new DivisionResource($division))->additional([
             'message' => 'Division details fetched successfully',
-            'data' => $division
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
         $data = $request->validate([
             'company_id' => 'sometimes|required|exists:companies,id',
@@ -76,32 +67,31 @@ class DivisionController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        $this->divisionRepository->update($data, $id);
+        $this->divisionService->update($data, $id);
 
         return response()->json([
-            'message' => 'Division updated successfully'
+            'message' => 'Division updated successfully',
         ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
-        $this->divisionRepository->delete($id);
+        $this->divisionService->delete($id);
 
         return response()->json([
-            'message' => 'Division deleted successfully'
+            'message' => 'Division deleted successfully',
         ], 200);
     }
 
-    public function searchDivision(Request $request)
+    public function searchDivision(Request $request): JsonResponse
     {
-        $data = $this->divisionRepository->searchDivision($request->search);
+        $data = $this->divisionService->searchDivision($request->search);
 
-        return response()->json([
+        return DivisionResource::collection($data)->additional([
             'message' => 'Division list fetched successfully',
-            'data' => DivisionResource::collection($data)
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 }

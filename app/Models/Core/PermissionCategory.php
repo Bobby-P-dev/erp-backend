@@ -11,6 +11,7 @@ class PermissionCategory extends Model
     use SoftDeletes;
 
     protected $primaryKey = 'id';
+
     protected $fillable = [
         'name',
     ];

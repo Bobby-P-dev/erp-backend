@@ -11,6 +11,7 @@ use App\Models\Purchasing\PurchaseRequisition;
 use App\Models\Purchasing\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -269,5 +270,82 @@ class PurchaseRequisitionControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonPath('message', "Purchase Requisition with status 'submitted' cannot be submitted.");
+    }
+
+    public function test_can_create_purchase_requisition_with_accounting_references(): void
+    {
+        $categoryId = DB::table('accounting_categories')->insertGetId([
+            'code' => 'ACC-CAT-01',
+            'name' => 'Operational Expenses',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $subcategoryId = DB::table('accounting_subcategories')->insertGetId([
+            'accounting_category_id' => $categoryId,
+            'code' => 'ACC-SUBCAT-01',
+            'name' => 'Office Supplies',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $accountId = DB::table('accounting_accounts')->insertGetId([
+            'accounting_subcategory_id' => $subcategoryId,
+            'code' => 'ACC-001',
+            'name' => 'Stationery',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $item = Item::create([
+            'code' => 'ITM-ACC-01',
+            'name' => 'Item with Accounting',
+            'description' => 'Test item with accounting',
+            'item_type' => 'Raw Material',
+            'unit_id' => $this->unit->id,
+            'accounting_category_id' => $categoryId,
+            'accounting_subcategory_id' => $subcategoryId,
+            'accounting_account_id' => $accountId,
+        ]);
+
+        $this->assertDatabaseHas('items', [
+            'id' => $item->id,
+            'accounting_category_id' => $categoryId,
+            'accounting_subcategory_id' => $subcategoryId,
+            'accounting_account_id' => $accountId,
+        ]);
+
+        $payload = [
+            'company_id' => $this->company->id,
+            'division_id' => $this->division->id,
+            'requester_id' => $this->user->id,
+            'request_date' => '2026-09-09',
+            'required_date' => '2026-09-15',
+            'purpose' => 'Test Accounting FKs',
+            'items' => [
+                [
+                    'item_id' => $item->id,
+                    'unit_id' => $this->unit->id,
+                    'quantity' => 10,
+                    'accounting_category_id' => $categoryId,
+                    'accounting_subcategory_id' => $subcategoryId,
+                    'accounting_account_id' => $accountId,
+                ],
+            ],
+        ];
+
+        $response = $this->postJson('/api/v1/purchase-requisitions', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.items.0.accounting_category_id', $categoryId)
+            ->assertJsonPath('data.items.0.accounting_subcategory_id', $subcategoryId)
+            ->assertJsonPath('data.items.0.accounting_account_id', $accountId);
+
+        $this->assertDatabaseHas('purchase_requestion_items', [
+            'item_id' => $item->id,
+            'accounting_category_id' => $categoryId,
+            'accounting_subcategory_id' => $subcategoryId,
+            'accounting_account_id' => $accountId,
+        ]);
     }
 }

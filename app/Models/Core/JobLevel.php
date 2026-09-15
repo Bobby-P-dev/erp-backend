@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class JobLevel extends Model
 {
     use SoftDeletes;
-    protected $table = "job_levels";
+
+    protected $table = 'job_levels';
 
     protected $fillable = [
         'code',

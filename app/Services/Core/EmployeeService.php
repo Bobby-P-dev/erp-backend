@@ -7,16 +7,14 @@ use App\Repositories\Core\EmployeeRepository;
 
 class EmployeeService
 {
-    protected EmployeeRepository $employeeRepository;
-
-    public function __construct()
-    {
-        $this->employeeRepository = new EmployeeRepository();
-    }
+    public function __construct(
+        protected EmployeeRepository $employeeRepository
+    ) {}
 
     public function getAll($search = null, array $filter = [])
     {
         $search = strtolower($search);
+
         return $this->employeeRepository->all($search, $filter);
     }
 
@@ -37,7 +35,7 @@ class EmployeeService
                 ->where('position_id', $positionId)
                 ->first();
 
-            if (!$divPos) {
+            if (! $divPos) {
                 throw new \Exception('Division and Position not found');
             }
         }
@@ -80,21 +78,37 @@ class EmployeeService
                 ->where('position_id', $positionId)
                 ->first();
 
-            if (!$divPos) {
+            if (! $divPos) {
                 throw new \Exception('Division and Position not found');
             }
         }
 
         try {
             $updateData = [];
-            if (isset($data['name'])) $updateData['name'] = $data['name'];
-            if (isset($data['nik'])) $updateData['nik'] = $data['nik'];
-            if (isset($data['company_id'])) $updateData['company_id'] = $data['company_id'];
-            if (isset($data['division_id'])) $updateData['division_id'] = $data['division_id'];
-            if (array_key_exists('position_id', $data)) $updateData['position_id'] = $data['position_id'];
-            if (array_key_exists('job_level_id', $data)) $updateData['job_level_id'] = $data['job_level_id'];
-            if (array_key_exists('is_active', $data)) $updateData['is_active'] = $data['is_active'];
-            if (array_key_exists('email', $data)) $updateData['email'] = $data['email'];
+            if (isset($data['name'])) {
+                $updateData['name'] = $data['name'];
+            }
+            if (isset($data['nik'])) {
+                $updateData['nik'] = $data['nik'];
+            }
+            if (isset($data['company_id'])) {
+                $updateData['company_id'] = $data['company_id'];
+            }
+            if (isset($data['division_id'])) {
+                $updateData['division_id'] = $data['division_id'];
+            }
+            if (array_key_exists('position_id', $data)) {
+                $updateData['position_id'] = $data['position_id'];
+            }
+            if (array_key_exists('job_level_id', $data)) {
+                $updateData['job_level_id'] = $data['job_level_id'];
+            }
+            if (array_key_exists('is_active', $data)) {
+                $updateData['is_active'] = $data['is_active'];
+            }
+            if (array_key_exists('email', $data)) {
+                $updateData['email'] = $data['email'];
+            }
 
             $employee = $this->employeeRepository->update($updateData, $id);
 
@@ -104,5 +118,4 @@ class EmployeeService
 
         return $employee;
     }
-
 }

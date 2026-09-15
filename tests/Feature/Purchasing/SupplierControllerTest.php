@@ -141,4 +141,207 @@ class SupplierControllerTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_unauthenticated_user_cannot_access_suppliers(): void
+    {
+        $response = $this->getJson('/api/v1/suppliers');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_can_list_suppliers_with_pagination(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->getJson('/api/v1/suppliers');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'name', 'supplier_code', 'is_active'],
+                ],
+                'meta',
+            ]);
+
+        $this->assertCount(3, $response->json('data'));
+    }
+
+    public function test_can_filter_suppliers_list_by_active_and_search(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $activeResponse = $this->getJson('/api/v1/suppliers?is_active=1');
+        $activeResponse->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+
+        $searchResponse = $this->getJson('/api/v1/suppliers?search=Sumber');
+        $searchResponse->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'CV Sumber Makmur');
+    }
+
+    public function test_can_create_supplier(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $payload = [
+            'company_id' => $this->company->id,
+            'supplier_code' => 'SUP-999',
+            'name' => 'PT Vendor Baru Indonesia',
+            'supplier_type' => 'Distributor',
+            'bussines_type' => 'PT',
+            'company_category' => 'Raw Material',
+            'email' => 'vendor.baru@example.com',
+            'phone' => '021-998877',
+            'payment_term' => 'Net 30',
+            'lead_time_days' => 7,
+            'is_active' => true,
+        ];
+
+        $response = $this->postJson('/api/v1/suppliers', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.supplier_code', 'SUP-999')
+            ->assertJsonPath('data.name', 'PT Vendor Baru Indonesia')
+            ->assertJsonPath('message', 'Supplier created successfully');
+
+        $this->assertDatabaseHas('suppliers', [
+            'supplier_code' => 'SUP-999',
+            'name' => 'PT Vendor Baru Indonesia',
+        ]);
+    }
+
+    public function test_create_supplier_generates_code_if_omitted(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $payload = [
+            'name' => 'PT Auto Code Supplier',
+            'email' => 'autocode@example.com',
+        ];
+
+        $response = $this->postJson('/api/v1/suppliers', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.name', 'PT Auto Code Supplier');
+
+        $code = $response->json('data.supplier_code');
+        $this->assertNotNull($code);
+        $this->assertStringStartsWith('SUP-', $code);
+
+        $this->assertDatabaseHas('suppliers', [
+            'supplier_code' => $code,
+            'name' => 'PT Auto Code Supplier',
+        ]);
+    }
+
+    public function test_validation_fails_when_creating_supplier_without_name(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->postJson('/api/v1/suppliers', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_can_show_supplier(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->getJson('/api/v1/suppliers/'.$this->supplier1->id);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $this->supplier1->id)
+            ->assertJsonPath('data.supplier_code', 'SUP-001')
+            ->assertJsonPath('data.name', 'PT Mitra Sejahtera');
+    }
+
+    public function test_show_supplier_returns_404_when_not_found(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->getJson('/api/v1/suppliers/99999');
+
+        $response->assertStatus(404);
+    }
+
+    public function test_can_update_supplier(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->patchJson('/api/v1/suppliers/'.$this->supplier1->id, [
+            'name' => 'PT Mitra Sejahtera Updated',
+            'phone' => '0899999999',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.name', 'PT Mitra Sejahtera Updated')
+            ->assertJsonPath('data.phone', '0899999999');
+
+        $this->assertDatabaseHas('suppliers', [
+            'id' => $this->supplier1->id,
+            'name' => 'PT Mitra Sejahtera Updated',
+            'phone' => '0899999999',
+        ]);
+    }
+
+    public function test_can_delete_supplier(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->deleteJson('/api/v1/suppliers/'.$this->supplier1->id);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('message', 'Supplier deleted successfully');
+
+        $this->assertSoftDeleted('suppliers', [
+            'id' => $this->supplier1->id,
+        ]);
+    }
+
+    public function test_cannot_create_supplier_with_duplicate_code(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->postJson('/api/v1/suppliers', [
+            'name' => 'Supplier Duplicate Code',
+            'supplier_code' => 'SUP-001', // already used by supplier1
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['supplier_code']);
+    }
+
+    public function test_cannot_update_supplier_with_duplicate_code(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->patchJson('/api/v1/suppliers/'.$this->supplier2->id, [
+            'supplier_code' => 'SUP-001', // already used by supplier1
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['supplier_code']);
+    }
+
+    public function test_update_supplier_returns_404_when_not_found(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->patchJson('/api/v1/suppliers/99999', [
+            'name' => 'Non Existent Supplier',
+        ]);
+
+        $response->assertStatus(404);
+    }
+
+    public function test_delete_supplier_returns_404_when_not_found(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $response = $this->deleteJson('/api/v1/suppliers/99999');
+
+        $response->assertStatus(404);
+    }
 }

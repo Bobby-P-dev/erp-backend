@@ -6,7 +6,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class EmployeeStoreRequest extends FormRequest
+class StoreEmployeeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -29,7 +29,7 @@ class EmployeeStoreRequest extends FormRequest
                 'required',
                 Rule::unique('employees')->where(function ($query) {
                     return $query->where('company_id', $this->company_id);
-                })
+                }),
             ],
             'company_id' => 'required|exists:companies,id',
             'division_id' => 'required|exists:divisions,id',

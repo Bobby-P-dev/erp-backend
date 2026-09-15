@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Core\AccountingAccount;
 use App\Models\Core\Company;
 use App\Models\Core\Division;
 use App\Models\Core\DocumentNumberSequence;
@@ -103,33 +104,46 @@ class PurchasingMasterDataSeeder extends Seeder
         );
 
         // 6. Items (ITEM-001, ITEM-002, ITEM-003)
-        Item::firstOrCreate(
+        $rawMaterialAccount = AccountingAccount::where('code', '1105')->first();
+        $rawMaterialSubcatId = $rawMaterialAccount?->accounting_subcategory_id;
+        $rawMaterialCatId = $rawMaterialAccount?->subcategory?->accounting_category_id;
+
+        Item::updateOrCreate(
             ['code' => 'ITEM-001'],
             [
                 'name' => 'Baut',
                 'description' => 'Baut ukuran standar',
                 'item_type' => 'Raw Material',
                 'unit_id' => $unitPcs->id,
+                'accounting_category_id' => $rawMaterialCatId,
+                'accounting_subcategory_id' => $rawMaterialSubcatId,
+                'accounting_account_id' => $rawMaterialAccount?->id,
             ]
         );
 
-        Item::firstOrCreate(
+        Item::updateOrCreate(
             ['code' => 'ITEM-002'],
             [
                 'name' => 'Plat Besi',
                 'description' => 'Plat besi lembaran',
                 'item_type' => 'Raw Material',
                 'unit_id' => $unitKg->id,
+                'accounting_category_id' => $rawMaterialCatId,
+                'accounting_subcategory_id' => $rawMaterialSubcatId,
+                'accounting_account_id' => $rawMaterialAccount?->id,
             ]
         );
 
-        Item::firstOrCreate(
+        Item::updateOrCreate(
             ['code' => 'ITEM-003'],
             [
                 'name' => 'Material Produksi',
                 'description' => 'Material pendukung proses produksi',
                 'item_type' => 'Raw Material',
                 'unit_id' => $unitMeter->id,
+                'accounting_category_id' => $rawMaterialCatId,
+                'accounting_subcategory_id' => $rawMaterialSubcatId,
+                'accounting_account_id' => $rawMaterialAccount?->id,
             ]
         );
 

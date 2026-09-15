@@ -2,44 +2,40 @@
 
 namespace App\Http\Controllers\Api\Core;
 
-use App\Http\Resources\Core\PermissionResource;
-
 use App\Http\Controllers\Controller;
-use App\Services\Core\PermissionService;
+use App\Http\Resources\Core\PermissionResource;
 use App\Repositories\Core\PermissionRepository;
+use App\Services\Core\PermissionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PermissionController extends Controller
 {
-    protected PermissionService $permissionService;
-    protected PermissionRepository $permissionRepository;
+    public function __construct(
+        protected PermissionService $permissionService,
+        protected PermissionRepository $permissionRepository
+    ) {}
 
-    public function __construct(PermissionService $permissionService, PermissionRepository $permissionRepository)
+    public function index(Request $request): JsonResponse
     {
-        $this->permissionService = $permissionService;
-        $this->permissionRepository = $permissionRepository;
-    }
-
-    public function index(Request $request)
-    {
-        $perPage = $request->get('per_page', 10);
+        $perPage = (int) $request->get('per_page', 10);
         $data = $this->permissionRepository->all($request->search, $perPage);
 
         return PermissionResource::collection($data)->additional([
-            'message' => 'Permission list fetched successfully'
+            'message' => 'Permission list fetched successfully',
         ])->response()->setStatusCode(200);
     }
 
-    public function search(Request $request)
+    public function search(Request $request): JsonResponse
     {
         $data = $this->permissionRepository->searchPermission($request->search);
 
         return PermissionResource::collection($data)->additional([
-            'message' => 'Permission list fetched successfully'
+            'message' => 'Permission list fetched successfully',
         ])->response()->setStatusCode(200);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validate = $request->validate([
             'label' => 'required',
@@ -48,29 +44,27 @@ class PermissionController extends Controller
 
         $permission = $this->permissionService->store($validate);
 
-        return response()->json([
+        return (new PermissionResource($permission))->additional([
             'message' => 'Permission created successfully',
-            'data' => new PermissionResource($permission),
-        ], 201);
+        ])->response()->setStatusCode(201);
     }
 
-    public function show(string $id)
+    public function show(string $id): JsonResponse
     {
         $permission = $this->permissionRepository->find($id);
 
-        if (!$permission) {
+        if (! $permission) {
             return response()->json(['message' => 'Permission not found'], 404);
         }
 
         $permission->load('permissionCategory:id,name');
 
-        return response()->json([
+        return (new PermissionResource($permission))->additional([
             'message' => 'Permission details fetched successfully',
-            'data' => new PermissionResource($permission)
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validate = $request->validate([
             'label' => 'sometimes|required',
@@ -79,18 +73,17 @@ class PermissionController extends Controller
 
         $permission = $this->permissionService->update($validate, $id);
 
-        return response()->json([
+        return (new PermissionResource($permission))->additional([
             'message' => 'Permission updated successfully',
-            'data' => new PermissionResource($permission)
-        ], 200);
+        ])->response()->setStatusCode(200);
     }
 
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         $this->permissionRepository->delete($id);
 
         return response()->json([
-            'message' => 'Permission deleted successfully'
+            'message' => 'Permission deleted successfully',
         ], 200);
     }
 }

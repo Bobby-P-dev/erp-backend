@@ -20,7 +20,7 @@ class DivisionRepository
             });
         }
 
-        if (!empty($filter['company_id'])) {
+        if (! empty($filter['company_id'])) {
             $query->where('company_id', $filter['company_id']);
         }
 

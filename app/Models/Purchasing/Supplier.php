@@ -90,4 +90,9 @@ class Supplier extends Model
     {
         return $this->hasOne(User::class, 'supplier_id');
     }
+
+    public function supplierItems(): HasMany
+    {
+        return $this->hasMany(SupplierItem::class, 'supplier_id');
+    }
 }

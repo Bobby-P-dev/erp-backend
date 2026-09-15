@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -13,7 +15,7 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create permissions
         $permissions = [
@@ -25,17 +27,17 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         // Create roles and assign created permissions
 
         // 1. Super Admin: gets all permissions
-        $roleSuperAdmin = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Super Admin']);
-        $roleSuperAdmin->givePermissionTo(\Spatie\Permission\Models\Permission::all());
+        $roleSuperAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
+        $roleSuperAdmin->givePermissionTo(Permission::all());
 
         // 2. Admin: gets specific permissions
-        $roleAdmin = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Admin']);
+        $roleAdmin = Role::firstOrCreate(['name' => 'Admin']);
         $roleAdmin->givePermissionTo([
             'view dashboard',
             'view users',
@@ -44,7 +46,7 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // 3. Staff: gets limited permissions
-        $roleStaff = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Staff']);
+        $roleStaff = Role::firstOrCreate(['name' => 'Staff']);
         $roleStaff->givePermissionTo([
             'view dashboard',
         ]);

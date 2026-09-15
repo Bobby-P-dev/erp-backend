@@ -4,10 +4,12 @@ namespace Database\Seeders;
 
 use App\Models\Core\Company;
 use App\Models\Core\File;
+use App\Models\Purchasing\Item;
 use App\Models\Purchasing\Supplier;
 use App\Models\Purchasing\SupplierBankAccount;
 use App\Models\Purchasing\SupplierContact;
 use App\Models\Purchasing\SupplierDocument;
+use App\Models\Purchasing\SupplierItem;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -70,6 +72,18 @@ class SupplierSeeder extends Seeder
                     'document_type' => 'NPWP',
                     'file_name' => 'NPWP_Krakatau_Steel.pdf',
                 ],
+                'items' => [
+                    [
+                        'item_code' => 'ITEM-002',
+                        'supplier_item_code' => 'KS-SHT-A36',
+                        'supplier_item_name' => 'Hot Rolled Steel Sheet / Plat Besi A36',
+                        'default_price' => 18500.00,
+                        'currency' => 'IDR',
+                        'minimum_order_quantity' => 100.0000,
+                        'lead_time_days' => 14,
+                        'reference_url' => 'https://www.krakatausteel.com/products/hot-rolled-coils',
+                    ],
+                ],
             ],
             [
                 'supplier_code' => 'SUP-002',
@@ -110,6 +124,18 @@ class SupplierSeeder extends Seeder
                     'document_number' => 'DOC-NIB-SUP-002',
                     'document_type' => 'NIB',
                     'file_name' => 'NIB_Chandra_Asri.pdf',
+                ],
+                'items' => [
+                    [
+                        'item_code' => 'ITEM-003',
+                        'supplier_item_code' => 'CAP-PP-TRILENE',
+                        'supplier_item_name' => 'Polypropylene Resin (Material Produksi)',
+                        'default_price' => 24500.00,
+                        'currency' => 'IDR',
+                        'minimum_order_quantity' => 50.0000,
+                        'lead_time_days' => 10,
+                        'reference_url' => 'https://www.chandra-asri.com/products/polypropylene',
+                    ],
                 ],
             ],
             [
@@ -152,6 +178,18 @@ class SupplierSeeder extends Seeder
                     'document_type' => 'SIUP',
                     'file_name' => 'SIUP_Tsubaki_Indonesia.pdf',
                 ],
+                'items' => [
+                    [
+                        'item_code' => 'ITEM-001',
+                        'supplier_item_code' => 'TSB-BLT-M8-100',
+                        'supplier_item_name' => 'High Tensile Bolt & Nut M8 (Baut Pabrik)',
+                        'default_price' => 3500.00,
+                        'currency' => 'IDR',
+                        'minimum_order_quantity' => 500.0000,
+                        'lead_time_days' => 7,
+                        'reference_url' => 'https://www.tsubaki.co.id/fasteners',
+                    ],
+                ],
             ],
             [
                 'supplier_code' => 'SUP-004',
@@ -192,6 +230,28 @@ class SupplierSeeder extends Seeder
                     'document_number' => 'DOC-NPWP-SUP-004',
                     'document_type' => 'NPWP',
                     'file_name' => 'NPWP_Misumi_Indonesia.pdf',
+                ],
+                'items' => [
+                    [
+                        'item_code' => 'ITEM-001',
+                        'supplier_item_code' => 'MSM-CB-M8-30',
+                        'supplier_item_name' => 'Misumi Hex Socket Head Cap Screw M8x30',
+                        'default_price' => 4200.00,
+                        'currency' => 'IDR',
+                        'minimum_order_quantity' => 200.0000,
+                        'lead_time_days' => 5,
+                        'reference_url' => 'https://id.misumi-ec.com/vona2/detail/110300224160/',
+                    ],
+                    [
+                        'item_code' => 'ITEM-002',
+                        'supplier_item_code' => 'MSM-SPCC-10',
+                        'supplier_item_name' => 'Cold Rolled Steel Sheet / Plat SPCC 1.0mm',
+                        'default_price' => 22000.00,
+                        'currency' => 'IDR',
+                        'minimum_order_quantity' => 20.0000,
+                        'lead_time_days' => 5,
+                        'reference_url' => 'https://id.misumi-ec.com/vona2/detail/110300452310/',
+                    ],
                 ],
             ],
             [
@@ -548,6 +608,31 @@ class SupplierSeeder extends Seeder
                         'notes' => 'Verified by Procurement / Legal Team',
                     ]
                 );
+            }
+
+            // 6. Create or update SupplierItems (Catalog)
+            if (! empty($data['items'])) {
+                foreach ($data['items'] as $itemData) {
+                    $item = Item::where('code', $itemData['item_code'])->first();
+                    if ($item) {
+                        SupplierItem::updateOrCreate(
+                            [
+                                'supplier_id' => $supplier->id,
+                                'item_id' => $item->id,
+                            ],
+                            [
+                                'supplier_item_code' => $itemData['supplier_item_code'],
+                                'supplier_item_name' => $itemData['supplier_item_name'],
+                                'default_price' => $itemData['default_price'],
+                                'currency' => $itemData['currency'],
+                                'minimum_order_quantity' => $itemData['minimum_order_quantity'],
+                                'lead_time_days' => $itemData['lead_time_days'],
+                                'reference_url' => $itemData['reference_url'] ?? null,
+                                'is_active' => true,
+                            ]
+                        );
+                    }
+                }
             }
         }
     }

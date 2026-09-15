@@ -8,20 +8,28 @@ use Illuminate\Support\Facades\DB;
 
 class PositionService
 {
-    protected PositionRepository $positionRepository;
+    public function __construct(
+        protected PositionRepository $positionRepository
+    ) {}
 
-    public function __construct()
+    public function getAll(?string $search = null, array $filter = [])
     {
-        $this->positionRepository = new PositionRepository();
-    }
+        if (! empty($search)) {
+            $search = strtoupper($search);
+        }
 
-    public function getAll($search, $filter = [])
-    {
-        $search = strtoupper($search);
         return $this->positionRepository->all($search, $filter);
     }
 
-    public function store(array $data)
+    public function find(int|string $id): ?Position
+    {
+        $position = $this->positionRepository->find($id);
+        $position?->load('divisions:id,company_id,name');
+
+        return $position;
+    }
+
+    public function store(array $data): Position
     {
         $data['name'] = strtoupper($data['name']);
         $data['code'] = strtoupper($data['code']);
@@ -30,8 +38,7 @@ class PositionService
             DB::beginTransaction();
             $position = $this->positionRepository->create($data);
 
-
-            if (!empty($data['division_ids'])) {
+            if (! empty($data['division_ids'])) {
                 $this->positionRepository->attachDivisions($position, $data['division_ids']);
             }
 
@@ -41,11 +48,10 @@ class PositionService
             throw $e;
         }
 
-
         return $position;
     }
 
-    public function update(array $data, $id)
+    public function update(array $data, int|string $id): ?Position
     {
         try {
             DB::beginTransaction();
@@ -67,6 +73,7 @@ class PositionService
             }
 
             DB::commit();
+
             return $position;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -74,8 +81,13 @@ class PositionService
         }
     }
 
-    public function delete($id)
+    public function delete(int|string $id)
     {
-        return Position::where('id', $id)->delete();
+        return $this->positionRepository->delete($id);
+    }
+
+    public function searchPosition(?string $search = null)
+    {
+        return $this->positionRepository->searchPosition($search);
     }
 }

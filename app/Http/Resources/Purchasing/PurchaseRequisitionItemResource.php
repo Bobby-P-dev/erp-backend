@@ -36,6 +36,9 @@ class PurchaseRequisitionItemResource extends JsonResource
                 ];
             }),
             'quantity' => (float) $this->quantity,
+            'accounting_category_id' => $this->accounting_category_id,
+            'accounting_subcategory_id' => $this->accounting_subcategory_id,
+            'accounting_account_id' => $this->accounting_account_id,
             'notes' => $this->notes,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

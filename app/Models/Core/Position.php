@@ -9,13 +9,13 @@ class Position extends Model
     protected $table = 'positions';
 
     protected $hidden = [
-        'pivot'
+        'pivot',
     ];
 
     protected $fillable = [
         'code',
         'name',
-        'is_active'
+        'is_active',
     ];
 
     public function divisions()
