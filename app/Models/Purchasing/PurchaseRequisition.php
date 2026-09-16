@@ -2,6 +2,8 @@
 
 namespace App\Models\Purchasing;
 
+use App\Contracts\Approval\Approvable;
+use App\Models\Approval\Concerns\HasApprovals;
 use App\Models\Core\Company;
 use App\Models\Core\Division;
 use App\Models\User;
@@ -10,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class PurchaseRequisition extends Model
+class PurchaseRequisition extends Model implements Approvable
 {
-    use SoftDeletes;
+    use HasApprovals, SoftDeletes;
 
     protected $table = 'purchase_requestions';
 

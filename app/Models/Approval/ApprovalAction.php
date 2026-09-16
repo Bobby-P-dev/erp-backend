@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models\Approval;
+
+use App\Enums\Approval\ApprovalActionType;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+#[Fillable([
+    'approval_request_id',
+    'approval_request_level_id',
+    'user_id',
+    'action',
+    'notes',
+    'acted_at',
+    'ip_address',
+    'user_agent',
+])]
+final class ApprovalAction extends Model
+{
+    use HasFactory;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'action' => ApprovalActionType::class,
+            'acted_at' => 'datetime',
+        ];
+    }
+
+    public function request(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequest::class, 'approval_request_id');
+    }
+
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequestLevel::class, 'approval_request_level_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}

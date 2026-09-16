@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Core\PermissionController;
 use App\Http\Controllers\Api\Core\PositionController;
 use App\Http\Controllers\Api\Core\RoleController;
 use App\Http\Controllers\Api\Core\UserController;
+use App\Http\Controllers\Api\V1\Approval\ApprovalDocumentTypeController;
 use App\Http\Controllers\Api\V1\Purchasing\PurchaseRequisitionController;
 use App\Http\Controllers\Api\V1\Purchasing\SupplierBankAccountController;
 use App\Http\Controllers\Api\V1\Purchasing\SupplierContactController;
@@ -165,6 +166,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('supplier-bank-accounts/{id}', [SupplierBankAccountController::class, 'show']);
     Route::patch('supplier-bank-accounts/{id}', [SupplierBankAccountController::class, 'update']);
     Route::delete('supplier-bank-accounts/{id}', [SupplierBankAccountController::class, 'destroy']);
+
+    // approval engine
+    Route::get('approval-configurations/document-types', [ApprovalDocumentTypeController::class, 'index']);
+    Route::get('approval/document-types', [ApprovalDocumentTypeController::class, 'index']);
 });
 
 require __DIR__.'/auth.php';

@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
             AccountingSeeder::class,
             PurchasingMasterDataSeeder::class,
             SupplierSeeder::class,
+            ApprovalWorkflowSeeder::class,
         ]);
     }
 }

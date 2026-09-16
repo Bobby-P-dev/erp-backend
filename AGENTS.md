@@ -147,16 +147,21 @@ Before relying on a package's API, confirm its installed version:
 - Setiap modul bisnis dipisahkan ke dalam folder domain masing-masing pada setiap layer:
   - `Core`: Master data utama perusahaan (Company, Division, Position, JobLevel, Employee, User, Role, Permission, Accounting).
   - `Purchasing`: Pengadaan barang, Purchase Requisitions, Supplier & relasi sub-entitas (Supplier Contacts, Bank Accounts, Documents, Supplier Items catalog).
+  - `Approval`: Dynamic Multi-Tier Approval Engine universal lintas modul (ApprovalConfiguration, ApprovalRequest, ApprovalLevel, ApprovalAction).
   - Modul baru di masa mendatang (e.g. `Inventory`, `Sales`, `Finance`) wajib mengikuti pola modular ini.
 - Struktur folder per layer harus mencerminkan nama modul:
-  - `app/Models/{Module}/`
-  - `app/Repositories/{Module}/`
-  - `app/Services/{Module}/`
-  - `app/Http/Controllers/Api/{Version}/{Module}/`
-  - `app/Http/Requests/{Module}/`
-  - `app/Http/Resources/{Module}/`
-  - `database/factories/{Module}/`
-  - `tests/Feature/{Module}/`
+  - `app/Contracts/{Module}/`: Kontrak antarmuka modul (misal: `Approvable`).
+  - `app/Enums/{Module}/`: Enums status, tipe dokumen, scope, dan action.
+  - `app/Events/{Module}/`: Domain lifecycle events modul.
+  - `app/Exceptions/{Module}/`: Custom domain exceptions modul.
+  - `app/Models/{Module}/`: Model Eloquent dan subfolder `Concerns/` untuk traits model.
+  - `app/Repositories/{Module}/`: Abstraksi query database dan filter.
+  - `app/Services/{Module}/`: Logika bisnis berat, transaksi, dan orkestrasi.
+  - `app/Http/Controllers/Api/{Version}/{Module}/`: API endpoint controller.
+  - `app/Http/Requests/{Module}/`: Form request validations.
+  - `app/Http/Resources/{Module}/`: API resources json transformers.
+  - `database/factories/{Module}/`: Model factories per domain modul.
+  - `tests/Feature/{Module}/`: Feature test suites per modul.
 
 ## 2. Repository & Service Flow Pattern
 - **Repository (Wajib untuk Query Database)**:
@@ -189,5 +194,42 @@ Before relying on a package's API, confirm its installed version:
 - **Setiap endpoint API WAJIB menggunakan Eloquent API Resource**. Dilarang mengembalikan raw Model Eloquent atau raw array data.
 - Resource harus berada di dalam namespace modul masing-masing (`App\Http\Resources\{Module}\{Model}Resource`).
 - Response JSON harus konsisten menyediakan key `message` dan `data` (serta `meta` untuk pagination).
+
+## 6. Dynamic Multi-Tier Approval Engine Rules
+- **Modul Domain**: `Approval` (`App\Models\Approval`, `App\Contracts\Approval`, `App\Enums\Approval`, `App\Services\ApprovalService`, `App\Events\Approval`).
+- **Contract `Approvable` & Trait `HasApprovals`**:
+  - Setiap model dokumen yang memerlukan persetujuan berjenjang (misal: `PurchaseRequisition`, `PurchaseOrder`, `LeaveRequest`, `SalesOrder`) **WAJIB** mengimplementasikan interface `App\Contracts\Approval\Approvable` dan menggunakan trait `App\Models\Approval\Concerns\HasApprovals`.
+  - Method wajib pada `Approvable`:
+    - `getApprovalCompanyId(): ?int`: ID perusahaan dokumen.
+    - `getApprovalDivisionId(): ?int`: ID divisi asal dokumen (untuk routing approver divisi/dept head).
+    - `getApprovalTotalAmount(): ?float`: Nominal transaksi dokumen (kembalikan `null` untuk dokumen non-finansial).
+    - `getApprovalDocumentNumber(): ?string`: Snapshot nomor resmi dokumen (misal `PR-2026-000001`).
+    - `getApprovalDocumentTitle(): ?string`: Snapshot judul / peruntukan pengajuan dokumen.
+    - `onApprovalApproved(ApprovalRequest $request): void`: Lifecycle callback saat dokumen disetujui penuh.
+    - `onApprovalRejected(ApprovalRequest $request, ?string $reason): void`: Lifecycle callback saat ditolak.
+    - `onApprovalRevisionRequested(ApprovalRequest $request, ?string $reason): void`: Lifecycle callback saat diminta revisi.
+- **Central Document Registry (`ApprovalDocumentType`) & Morph Map**:
+  - Setiap tipe dokumen yang mendukung approval **WAJIB** didaftarkan ke Enum `App\Enums\Approval\ApprovalDocumentType`.
+  - Enum ini menyediakan metadata terpusat: `label()`, `module()`, `modelClass()`, `hasAmount()`, `toOption()`, `groupedOptions()`, dan `morphMap()`.
+  - Morph map didaftarkan di `AppServiceProvider::boot()` via `Relation::morphMap(ApprovalDocumentType::morphMap())`.
+  - Kolom database (`approval_configurations.document_type` dan `approval_requests.approvable_type`) **WAJIB** menyimpan slug morph (`purchase_requisition`, `purchase_order`), **DILARANG KERAS** menyimpan hardcoded namespace PHP class panjang secara acak.
+- **API Endpoint untuk Frontend**:
+  - Frontend mendapatkan daftar pilihan modul/dokumen untuk form konfigurasi melalui `GET /api/v1/approval-configurations/document-types`.
+  - Parameter `?grouped=true` (default) menghasilkan data yang dikelompokkan per modul (`optgroup`), sedangkan `?grouped=false` menghasilkan flat list.
+- **Enums & State Machine Integrity**:
+  - `ApprovalRequestStatus`: `Pending`, `Approved`, `Rejected`, `Revision`, `Cancelled`.
+  - `ApprovalLevelStatus`: `Pending`, `Approved`, `Rejected`, `Skipped`.
+  - `ApprovalActionType`: `Approve`, `Reject`, `RequestRevision`, `Skip`, `Reassign`.
+  - `ApproverScope`: `RoleOnly`, `RoleAndDivision`, `JobLevelAndDivision`, `DepartmentHead`, `SpecificUser`.
+  - `ApprovalMode`: `Any` (cukup 1 approver di level tersebut), `All` (seluruh approver di level tersebut harus menyetujui).
+- **Deadlock & Concurrency Prevention**:
+  - Semua operasi submit, approve, reject, dan revisi di dalam `ApprovalService` **WAJIB** menerapkan urutan penguncian (*Lock Ordering*) yang konsisten dalam database transaction:
+    1. Lock Approvable record (`->lockForUpdate()`)
+    2. Lock ApprovalRequest record (`->lockForUpdate()`)
+    3. Lock ApprovalRequestLevel record (`->lockForUpdate()`)
+- **Maker-Checker Security**:
+  - Secara default, requester dilarang menyetujui dokumen yang dibuatnya sendiri (`requester_id === approver_id`). Jika terdeteksi, lemparkan `UnauthorizedApproverException`.
+- **Siklus Resubmit Revisi**:
+  - Pengajuan ulang dokumen berstatus `Revision` tidak membuat baris `ApprovalRequest` baru, melainkan me-reset request aktif kembali ke `Pending` dan mengulang evaluasi level dari step 1.
 
 </laravel-boost-guidelines>

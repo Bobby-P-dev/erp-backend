@@ -17,7 +17,16 @@ class Employee extends Model
         'job_level_id',
         'email',
         'is_active',
+        'is_department_head',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'is_department_head' => 'boolean',
+        ];
+    }
 
     public function company()
     {

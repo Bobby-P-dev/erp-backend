@@ -17,6 +17,9 @@ Aplikasi ini mengadopsi prinsip **Clean Code** dan arsitektur **Modular Monolith
   - Transaksi Pengadaan: `PurchaseRequisition`, `PurchaseRequisitionItem`
   - Manajemen Pemasok: `Supplier`, `SupplierContact`, `SupplierBankAccount`, `SupplierDocument`
   - Katalog Mitra: `SupplierItem`
+- **`Approval`**: Dynamic Multi-Tier Approval Engine universal lintas modul:
+  - Konfigurasi & Step: `ApprovalConfiguration`, `ApprovalConfigurationLevel`
+  - Transaksi & Histori: `ApprovalRequest`, `ApprovalRequestLevel`, `ApprovalAction`
 - **Modul Masa Depan**: Modul baru (misalnya `Inventory`, `Finance`, `Sales`) wajib mengikuti pola modularitas yang sama.
 
 ---
@@ -25,27 +28,39 @@ Aplikasi ini mengadopsi prinsip **Clean Code** dan arsitektur **Modular Monolith
 
 ```text
 app/
+├── Contracts/
+│   └── Approval/            <-- Interfaces & Kontrak (misal: Approvable)
+├── Enums/
+│   └── Approval/            <-- Enums Status, Scopes, Actions, DocumentTypes
+├── Events/
+│   └── Approval/            <-- Domain Lifecycle Events
+├── Exceptions/
+│   └── Approval/            <-- Custom Domain Exceptions
 ├── Http/
 │   ├── Controllers/
 │   │   └── Api/
-│   │       ├── Core/            <-- Modul Core Controllers
+│   │       ├── Core/        <-- Modul Core Controllers
 │   │       └── V1/
+│   │           ├── Approval/    <-- Modul Approval Controllers
 │   │           └── Purchasing/  <-- Modul Purchasing Controllers
 │   ├── Requests/
-│   │   ├── Core/                <-- Form Requests Modul Core
-│   │   └── Purchasing/          <-- Form Requests Modul Purchasing
+│   │   ├── Core/            <-- Form Requests Modul Core
+│   │   └── Purchasing/      <-- Form Requests Modul Purchasing
 │   └── Resources/
-│       ├── Core/                <-- API Resources Modul Core
-│       └── Purchasing/          <-- API Resources Modul Purchasing
+│       ├── Approval/        <-- API Resources Modul Approval
+│       ├── Core/            <-- API Resources Modul Core
+│       └── Purchasing/      <-- API Resources Modul Purchasing
 ├── Models/
-│   ├── Core/                    <-- Eloquent Models Core
-│   └── Purchasing/              <-- Eloquent Models Purchasing
+│   ├── Approval/            <-- Eloquent Models Approval (termasuk Concerns/)
+│   ├── Core/                <-- Eloquent Models Core
+│   └── Purchasing/          <-- Eloquent Models Purchasing
 ├── Repositories/
-│   ├── Core/                    <-- Database Queries & Filters Core
-│   └── Purchasing/              <-- Database Queries & Filters Purchasing
+│   ├── Core/                <-- Database Queries & Filters Core
+│   └── Purchasing/          <-- Database Queries & Filters Purchasing
 └── Services/
-    ├── Core/                    <-- Business Logic Core
-    └── Purchasing/              <-- Business Logic Purchasing
+    ├── ApprovalService.php  <-- Approval Engine Orchestration
+    ├── Core/                <-- Business Logic Core
+    └── Purchasing/          <-- Business Logic Purchasing
 ```
 
 ---
@@ -100,6 +115,166 @@ Gunakan `Service` jika terdapat salah satu kondisi berikut:
   ) {}
   ```
 - **Dilarang** melakukan instansiasi manual dengan operator `new` di dalam controller (misal: `$this->repo = new SupplierRepository;`).
+
+---
+
+---
+
+## ⚡ Dynamic Multi-Tier Approval Engine
+
+Sistem ini dilengkapi dengan **Dynamic Multi-Tier Approval Engine** universal yang dirancang fleksibel untuk menangani alur persetujuan di seluruh modul ERP (Purchasing, HR, Sales, Inventory, Finance) tanpa perlu mengubah skema database engine.
+
+### 1. Karakteristik Utama Engine
+- **Universal & Polimorfik**: Dapat disambungkan ke model dokumen manapun via relasi polimorfik Laravel (`approvable`).
+- **Mendukung Alur Finansial & Non-Finansial**: Kolom `min_amount` dan `max_amount` bersifat *nullable*. Dokumen non-finansial (seperti Cuti atau Mutasi Barang) dievaluasi berbasis hierarki organisasi.
+- **Snapshot Data Terintegrasi**: `approval_requests` secara otomatis menyimpan snapshot `document_number` (misal nomor PR/PO) dan `document_title` (peruntukan pengajuan) untuk kemudahan audit dan pencarian tanpa join berlebih.
+- **Deadlock-Free Concurrency**: Menerapkan urutan penguncian transaksi yang konsisten: `Approvable -> ApprovalRequest -> ApprovalRequestLevel`.
+- **Maker-Checker Security**: Pembuat dokumen secara default dilarang menyetujui pengajuannya sendiri.
+- **Siklus Resubmit Revisi**: Pengajuan dokumen yang diminta revisi akan me-reset status `Revision` kembali ke `Pending` dan mengulang alur tanpa membuat ID approval baru.
+
+---
+
+### 2. Cara Mendaftarkan Dokumen Baru ke Engine (Developer Guide)
+
+Untuk menghubungkan dokumen baru (misal: `SalesOrder` atau `LeaveRequest`) ke sistem Approval:
+
+#### Langkah 1: Implementasikan Contract `Approvable` & Trait `HasApprovals`
+```php
+namespace App\Models\Sales;
+
+use App\Contracts\Approval\Approvable;
+use App\Models\Approval\Concerns\HasApprovals;
+use App\Models\Approval\ApprovalRequest;
+use Illuminate\Database\Eloquent\Model;
+
+class SalesOrder extends Model implements Approvable
+{
+    use HasApprovals;
+
+    public function getApprovalCompanyId(): ?int
+    {
+        return $this->company_id;
+    }
+
+    public function getApprovalDivisionId(): ?int
+    {
+        return $this->division_id;
+    }
+
+    public function getApprovalTotalAmount(): ?float
+    {
+        return (float) $this->total_amount; // Kembalikan null jika dokumen non-finansial
+    }
+
+    public function getApprovalDocumentNumber(): ?string
+    {
+        return $this->so_number;
+    }
+
+    public function getApprovalDocumentTitle(): ?string
+    {
+        return $this->customer_name . ' - ' . $this->project_name;
+    }
+
+    public function onApprovalApproved(ApprovalRequest $request): void
+    {
+        $this->update(['status' => 'approved']);
+    }
+
+    public function onApprovalRejected(ApprovalRequest $request, ?string $reason): void
+    {
+        $this->update(['status' => 'rejected']);
+    }
+
+    public function onApprovalRevisionRequested(ApprovalRequest $request, ?string $reason): void
+    {
+        $this->update(['status' => 'revision_needed']);
+    }
+}
+```
+
+#### Langkah 2: Daftarkan ke Enum `ApprovalDocumentType`
+Cukup tambahkan 1 baris kasus pada [app/Enums/Approval/ApprovalDocumentType.php](file:///var/www/erp-backend/app/Enums/Approval/ApprovalDocumentType.php):
+```php
+case SalesOrder = 'sales_order';
+```
+Dan lengkapi method `label()`, `module()`, `modelClass()`, serta `hasAmount()`.
+
+**Hasilnya:**
+1. Laravel Morph Map otomatis terdaftar secara terpusat di [AppServiceProvider.php](file:///var/www/erp-backend/app/Providers/AppServiceProvider.php).
+2. Endpoint API dropdown frontend otomatis menyediakan opsi dokumen tersebut.
+3. Database tetap bersih dengan menyimpan morph slug (`sales_order`).
+
+---
+
+### 3. Struktur 5 Tabel Inti Engine
+
+| Tabel | Fungsi |
+| :--- | :--- |
+| `approval_configurations` | Master template alur persetujuan per tipe dokumen, company, dan range nominal |
+| `approval_configuration_levels` | Master tingkatan step persetujuan berurutan, approver scope, mode, dan kondisi dinamis |
+| `approval_requests` | Transaksi pengajuan persetujuan aktif untuk record dokumen tertentu |
+| `approval_request_levels` | Instance langkah persetujuan aktif beserta status per level (Pending, Approved, Skipped) |
+| `approval_actions` | Jejak audit log riwayat tindakan approver (Approve, Reject, Revision, Reassign) |
+
+---
+
+### 4. Skope Approver & Mode Persetujuan
+
+#### Approver Scope (`ApproverScope`)
+- **`role_only`**: Siapapun yang memiliki role tertentu (misal: *Manager Purchasing*).
+- **`role_and_division`**: Role tertentu yang berada di divisi yang sama dengan pemohon (misal: *Supervisor Produksi*).
+- **`job_level_and_division`**: Job Level tertentu di divisi pemohon (misal: *Manager* di divisi pemohon).
+- **`department_head`**: Pejabat Kepala Divisi / Departemen pemohon (`employees.is_department_head = true`).
+- **`specific_user`**: Pengguna spesifik yang ditunjuk langsung.
+
+#### Approval Mode (`ApprovalMode`)
+- **`any`**: Cukup 1 orang approver yang menyetujui, level langsung selesai (*first-to-approve*).
+- **`all`**: Seluruh approver yang memenuhi kualifikasi pada level tersebut wajib menyetujui.
+
+---
+
+### 5. API Endpoint untuk Frontend
+
+#### Mengambil Daftar Pilihan Modul/Dokumen untuk Dropdown
+Frontend memanggil endpoint berikut saat Admin membuat/mengedit konfigurasi approval:
+
+```http
+GET /api/v1/approval-configurations/document-types
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `grouped=true` *(default)*: Menghasilkan data yang dikelompokkan per modul (cocok untuk tag `<optgroup>`).
+- `grouped=false`: Menghasilkan flat list (cocok untuk komponen select biasa atau search autocomplete).
+
+**Contoh Response (`grouped=true`):**
+```json
+{
+  "message": "Approval document types retrieved successfully",
+  "data": [
+    {
+      "module": "Purchasing",
+      "items": [
+        {
+          "value": "purchase_requisition",
+          "label": "Purchase Requisition (Pengajuan Pembelian)",
+          "module": "Purchasing",
+          "model_class": "App\\Models\\Purchasing\\PurchaseRequisition",
+          "has_amount": true
+        },
+        {
+          "value": "purchase_order",
+          "label": "Purchase Order (Pesanan Pembelian)",
+          "module": "Purchasing",
+          "model_class": "App\\Models\\Purchasing\\PurchaseOrder",
+          "has_amount": true
+        }
+      ]
+    }
+  ]
+}
+```
 
 ---
 
